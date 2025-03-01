@@ -8,6 +8,15 @@ load_dotenv()
 APP_ENV = os.getenv("APP_ENV", "development")
 DEBUG = os.getenv("DEBUG", "True") == "True"
 
+PATH_CONFIG = {
+    "base": os.getenv("BASE_DIR"),
+    "data": os.getenv("DATA_DIR"),
+    "projets": os.getenv("PROJETS_DIR"),
+    "documentation": os.getenv("DOC_DIR"),
+    "generated_prompt": os.getenv("GENERATED_DIR"),
+    "vector_db": os.getenv("VECTORDB_DIR"),
+}
+
 DB_CONFIG = {
     "type": os.getenv("DB_TYPE", "sqlite"),
     "host": os.getenv("DB_HOST", "localhost"),
