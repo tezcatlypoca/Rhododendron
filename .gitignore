@@ -1,5 +1,5 @@
 # Environnement virtuel Python
-venv/
+rhodoenv/
 .env
 *.pyc
 __pycache__/
@@ -30,3 +30,4 @@ secrets.json
 
 # Autres
 *.ini
+README.txt
