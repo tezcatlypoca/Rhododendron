@@ -1,0 +1,17 @@
+Il y a plusieurs façons de gérer les conflits entre collègues dans une équipe agile. Voici quelques conseils :
+
+1. Communication ouverte et transparente : assurez-vous que tous les membres de l'équipe sont informés et impliqués dans la résolution des conflits. 
+Cela peut inclure des discussions de groupe pour identifier les problèmes, 
+des discussions individuelles pour comprendre les perspectives de chaque personne et des compromis pour trouver une solution qui convient à tous.
+2. Fourniture d'information : si un conflit survient, assurez-vous que les parties en conflit ont suffisamment d'informations pour prendre des décisions éclairées. 
+Cela peut inclure des documents ou des ressources supplémentaires qui peuvent aider à comprendre le contexte et les raisons derrière les positions des parties en conflit.        
+3. Aide à la résolution de problèmes : si vous ne parvenez pas à trouver une solution à un conflit, n'hésitez pas à demander de l'aide à d'autres membres de l'équipe ou à 
+un coach Scrum. Les membres de l'équipe peuvent également être entraînés à résoudre des conflits de manière plus efficace.
+4. Focus sur les solutions : plus que sur la cause du problème, assurez-vous de trouver une solution qui convient à tous. 
+Cela peut inclure des compromis ou des modifications aux processus pour aider à éviter d'autres conflits similaires dans le futur.
+5. Respect mutuel : assurez-vous que tous les membres de l'équipe ont un respect mutuel et qu'ils sont impliqués dans la résolution des conflits de manière équitable. 
+Cela peut inclure des règles pour encourager la communication ouverte et transparente, 
+ainsi que des processus pour surveiller et gérer les conflits en fonction de leur gravité.
+
+En tant que servant-leader, il est important de maintenir un environnement de travail productif et collaboratif. 
+Vous pouvez aider à créer un climat de confiance et de respect mutuel en suivant ces conseils.

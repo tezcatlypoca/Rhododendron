@@ -2,7 +2,7 @@ from langchain_community.llms import Ollama
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from typing import List, Dict, Optional
-from dto_role import *
+from agents.dto_role import *
 import os, json, requests, streamlit as st
 
 class Agent:
@@ -122,6 +122,6 @@ class Agent:
     
 # END CLASS
 
-dev_agent = Agent(name="Test", role=DeveloperDTO(), model_name="codellama:7b-instruct-q4_0", temperature=0.7)
-response = dev_agent.query("Comment gérer des conflits entre collègues ? En français")
-print(response)
+# dev_agent = Agent(name="Test", role=dto_roleDeveloperDTO(), model_name="codellama:7b-instruct-q4_0", temperature=0.7)
+# response = dev_agent.query("Comment gérer des conflits entre collègues ? En français")
+# print(response)
