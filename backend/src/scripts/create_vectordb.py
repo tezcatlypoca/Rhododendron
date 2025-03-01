@@ -8,6 +8,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 import shutil
+import glob
 
 # Ajout du répertoire parent au PYTHONPATH pour trouver le module settings
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,6 +18,9 @@ from settings import PATH_CONFIG
 BASE_DIR = PATH_CONFIG['base']
 DATA_DIR = PATH_CONFIG['data']
 VECTORDB_DIR = PATH_CONFIG['vector_db']
+
+# Dossiers à exclure
+EXCLUDED_DIRS = ['node_modules', '.git', '.idea', 'build', 'dist', '.dart_tool', '.pub-cache']
 
 # Configuration du logging
 logging.basicConfig(
@@ -31,6 +35,27 @@ logger = logging.getLogger("VectorDB")
 
 # Créer le dossier pour la base vectorielle
 os.makedirs(VECTORDB_DIR, exist_ok=True)
+
+def should_exclude(file_path):
+    """Vérifie si un fichier doit être exclu en fonction de son chemin."""
+    normalized_path = file_path.replace("\\", "/")
+    for excluded_dir in EXCLUDED_DIRS:
+        if f"/{excluded_dir}/" in normalized_path:
+            return True
+    return False
+
+def find_files_with_ext(base_dir, extension):
+    """Trouve tous les fichiers avec une extension donnée en excluant certains dossiers."""
+    files = []
+    for root, dirs, filenames in os.walk(base_dir):
+        # Modification sur place pour ne pas descendre dans les dossiers exclus
+        dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
+        
+        for filename in filenames:
+            if filename.endswith(f".{extension}"):
+                file_path = os.path.join(root, filename)
+                files.append(file_path)
+    return files
 
 def charger_documents_code():
     """Charge les documents de code depuis le dossier des projets."""
@@ -48,14 +73,18 @@ def charger_documents_code():
     # Pour chaque extension, charger les fichiers correspondants
     for ext in code_extensions:
         try:
-            loader = DirectoryLoader(
-                f"{DATA_DIR}/projets", 
-                glob=f"**/*.{ext}", 
-                loader_cls=TextLoader,
-                loader_kwargs={"encoding": "utf-8", "autodetect_encoding": True},
-                show_progress=True
-            )
-            docs = loader.load()
+            # Trouver les fichiers en excluant les dossiers non désirés
+            file_paths = find_files_with_ext(f"{DATA_DIR}/projets", ext)
+            
+            # Charger chaque fichier individuellement
+            docs = []
+            for file_path in file_paths:
+                try:
+                    loader = TextLoader(file_path, encoding="utf-8", autodetect_encoding=True)
+                    docs.extend(loader.load())
+                except Exception as e:
+                    logger.error(f"Erreur lors du chargement du fichier {file_path}: {str(e)}")
+            
             logger.info(f"Chargés {len(docs)} fichiers .{ext}")
             all_documents.extend(docs)
             total_files += len(docs)
@@ -105,8 +134,8 @@ def decouper_documents(documents):
     avg_size = sum(chunk_sizes) / len(chunks) if chunks else 0
     
     logger.info(f"Taille moyenne des chunks: {avg_size:.2f} caractères")
-    logger.info(f"Plus petit chunk: {min(chunk_sizes)} caractères")
-    logger.info(f"Plus grand chunk: {max(chunk_sizes)} caractères")
+    logger.info(f"Plus petit chunk: {min(chunk_sizes) if chunk_sizes else 0} caractères")
+    logger.info(f"Plus grand chunk: {max(chunk_sizes) if chunk_sizes else 0} caractères")
     
     return chunks
 
@@ -117,8 +146,8 @@ def creer_base_vectorielle(chunks):
     
     # Utiliser un modèle d'embedding léger
     embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
-    model_kwargs={'device': 'cpu'}  # Utiliser CPU à la place de GPU
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_kwargs={'device': 'cpu'}  # Utiliser CPU à la place de GPU
     )
     
     # Supprimer la base existante si nécessaire
@@ -128,6 +157,13 @@ def creer_base_vectorielle(chunks):
     
     # Créer la base
     logger.info(f"Vectorisation de {len(chunks)} chunks...")
+    
+    # Limiter le nombre de chunks si nécessaire pour éviter les problèmes de mémoire
+    max_chunks = 10000  # Vous pouvez ajuster ce nombre en fonction de votre RAM
+    if len(chunks) > max_chunks:
+        logger.warning(f"Nombre de chunks ({len(chunks)}) supérieur à {max_chunks}. Limitation pour éviter les problèmes de mémoire.")
+        chunks = chunks[:max_chunks]
+        logger.info(f"Utilisation des {len(chunks)} premiers chunks pour la vectorisation.")
     
     vectordb = Chroma.from_documents(
         documents=chunks,

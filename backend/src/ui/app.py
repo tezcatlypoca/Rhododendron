@@ -1,11 +1,13 @@
 import streamlit as st
-import os, tempfile, zipfile, io, json, time
+import os, tempfile, zipfile, io, json, time, sys
 from langchain_community.document_loaders import TextLoader, DirectoryLoader
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.llms import Ollama
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
+# Ajout du répertoire parent au PYTHONPATH pour trouver le module settings
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from settings import PATH_CONFIG
 
 # Configuration - MISE À JOUR DU CHEMIN POUR VOTRE 
