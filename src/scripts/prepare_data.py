@@ -20,6 +20,9 @@ DOC_DIR = PATH_CONFIG['documentation']
 os.makedirs(PROJETS_DIR, exist_ok=True)
 os.makedirs(DOC_DIR, exist_ok=True)
 
+# Dossiers à exclure lors de la copie
+EXCLUDED_DIRS = ['node_modules', '.git', '.idea', 'build', 'dist', '.dart_tool', '.pub-cache']
+
 def copier_projets_existants(source_dir, dest_dir):
     """Copie les projets Flutter/Java existants vers le dossier de données."""
     # Remplacer ces extensions par celles utilisées dans vos projets
@@ -29,6 +32,9 @@ def copier_projets_existants(source_dir, dest_dir):
     
     # Itérer à travers les dossiers de projets
     for root, dirs, files in os.walk(source_dir):
+        # Exclure les répertoires node_modules et autres dossiers inutiles
+        dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
+        
         for file in files:
             # Vérifier si l'extension est dans la liste des extensions à copier
             if any(file.endswith(ext) for ext in extensions):
@@ -93,6 +99,9 @@ def nettoyer_fichiers():
     """Nettoie les fichiers pour ne garder que le contenu pertinent."""
     # Parcourir tous les fichiers
     for root, dirs, files in os.walk(PROJETS_DIR):
+        # Exclure les répertoires node_modules et autres dossiers inutiles
+        dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
+        
         for file in files:
             # Ignorer les fichiers binaires, les ressources, etc.
             if file.endswith(('.png', '.jpg', '.ttf', '.otf', '.jar', '.class', '.so')):
@@ -108,6 +117,9 @@ def statistiques_donnees():
     
     # Parcourir tous les fichiers
     for root, dirs, files in os.walk(DATA_DIR):
+        # Exclure les répertoires node_modules et autres dossiers inutiles lors des statistiques
+        dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS]
+        
         for file in files:
             file_path = os.path.join(root, file)
             
