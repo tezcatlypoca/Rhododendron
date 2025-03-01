@@ -61,7 +61,7 @@ streamlit run app.py
 
 ### Installation du model Ollama
 
-- Se rendre sur Ollama[ollama](https://ollama.ai/), [vLLM](https://github.com/vllm-project/vllm)
+- Se rendre sur [Ollama](https://ollama.ai/)
 - Télécharger Ollama, puis run la commande suivante:
   
 ```bash
