@@ -59,6 +59,16 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
+### Installation du model Ollama
+
+- Se rendre sur Ollama[ollama](https://ollama.ai/), [vLLM](https://github.com/vllm-project/vllm)
+- Télécharger Ollama, puis run la commande suivante:
+  
+```bash
+ollama pull codellama:7b-instruct-q4_0
+```
+
+
 ## 📦 Technologies
 
 - **Modèles**: [Llama 3](https://ai.meta.com/llama/), [CodeLlama](https://github.com/facebookresearch/codellama), [Mistral](https://mistral.ai/)
