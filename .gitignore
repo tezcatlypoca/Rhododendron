@@ -31,5 +31,6 @@ secrets.json
 # Autres
 *.ini
 README.txt
+doc.txt
 
 src/data/
