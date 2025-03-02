@@ -1,13 +1,6 @@
-import os
-import sys
-import logging
-import shutil
-import requests
-import zipfile
-import io
+import os, sys, logging, shutil, requests, zipfile, io, threading
 import tkinter as tk
-from tkinter import filedialog, ttk, messagebox, Text
-import threading
+from tkinter import filedialog, ttk, messagebox, Text 
 from datetime import datetime
 
 # Ajout du répertoire parent au PYTHONPATH
