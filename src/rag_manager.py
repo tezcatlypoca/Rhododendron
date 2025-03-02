@@ -1,8 +1,4 @@
-import os
-import sys
-import time
-import logging
-import shutil
+import os, sys, time, logging, shutil
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Tuple, Union
 
@@ -34,7 +30,7 @@ class RAGManager:
         Initialise le gestionnaire RAG.
         
         Args:
-            vector_db_dir: Chemin vers le répertoire de la base vectorielle
+            vector_db_dir: Chemin vers le répertoire de la base de donnée vectorielle
             data_dir: Chemin vers le répertoire des données (code et documentation)
             embedding_model: Modèle d'embedding à utiliser (par défaut, HuggingFaceEmbeddings)
             excluded_dirs: Liste des répertoires à exclure lors du chargement des documents
@@ -53,7 +49,7 @@ class RAGManager:
             model_kwargs={'device': 'cpu'}
         )
         
-        # Base vectorielle
+        # Base  de donnée vectorielle
         self.vectordb = None
     
     def _setup_logger(self) -> logging.Logger:
@@ -88,7 +84,7 @@ class RAGManager:
             bool: True si le chargement a réussi, False sinon
         """
         try:
-            # Vérifier si la base vectorielle existe
+            # Vérifier si la base vectorielle n'existe pas
             if not os.path.exists(os.path.join(self.vector_db_dir, "chroma")):
                 self.logger.error(f"Base vectorielle non trouvée dans {self.vector_db_dir}/chroma")
                 return False
