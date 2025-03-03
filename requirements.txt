@@ -6,10 +6,8 @@ streamlit
 fastapi
 uvicorn
 transformers
-torch
-torchvision
-torchaudio
 sentence-transformers
 pytest
-yaml
+pyyaml
 python-dotenv
+langchain-community

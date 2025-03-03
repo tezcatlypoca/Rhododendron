@@ -31,3 +31,5 @@ secrets.json
 # Autres
 *.ini
 README.txt
+test_torch.py
+wget-log
