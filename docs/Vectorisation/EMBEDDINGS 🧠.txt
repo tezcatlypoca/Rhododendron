@@ -1,0 +1,36 @@
+🧠 COMPRENDRE LES EMBEDDINGS 🧠
+==================================================
+
+1. Qu'est-ce qu'un embedding ? 🤔
+Un embedding est une représentation vectorielle dense de données textuelles,
+où chaque mot ou document est transformé en un vecteur de nombres réels.
+C'est comme une 'empreinte numérique' qui capture le sens et le contexte.
+
+2. Comment fonctionnent les embeddings ? 🔍
+- Transformation : Chaque mot/document est converti en un vecteur de nombres
+- Similarité sémantique : Des mots/documents similaires ont des vecteurs proches       
+- Dimension typique : Souvent entre 100 et 1000 dimensions
+
+3. Avantages des embeddings 🚀
+- Capture du contexte et du sens
+- Possibilité de calculs mathématiques sur le texte
+- Permet la recherche sémantique et la recommandation
+
+4. Exemple simplifié 📊
+Vecteur pour 'roi'   : [0.2, -0.5, 0.1, ...]
+Vecteur pour 'reine' : [0.21, -0.49, 0.12, ...]
+Ces vecteurs seraient très proches, reflétant leur similarité sémantique
+
+5. Dans votre projet 🤖
+- Modèle utilisé : sentence-transformers/all-MiniLM-L6-v2
+- Transforme le code source, documentation en vecteurs
+- Permet de rechercher du code similaire par sens, pas seulement par mots-clés
+
+Répertoire de la base vectorielle : D:\Coding\AppWindows\Rhododendron\src\data\vectordb
+
+=== 🔬 INSPECTION DÉTAILLÉE DE LA BASE VECTORIELLE ===
+
+📋 Nombre de collections : 1
+
+🗂️ Collection : langchain    
+  Nombre de documents : 20000

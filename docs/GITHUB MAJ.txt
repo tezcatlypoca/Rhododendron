@@ -1,0 +1,10 @@
+Git bash here
+
+ON NE PUSH JAMAIS SUR LA BRANCH MAIN OU SUR LE DEVELOP
+
+git branch -- 
+git status -- 
+git add . -- 
+git commit -m "********" -- 
+git push origin BRANCH --
+git switch -c featurs/******* -- Crée et se déplace sur ce branch

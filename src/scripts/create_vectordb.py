@@ -166,13 +166,12 @@ def creer_base_vectorielle(chunks):
         logger.info(f"Utilisation des {len(chunks)} premiers chunks pour la vectorisation.")
     
     vectordb = Chroma.from_documents(
-        documents=chunks,
-        embedding=embeddings,
-        persist_directory=f"{VECTORDB_DIR}/chroma"
+    documents=chunks,
+    embedding=embeddings,
+    persist_directory=f"{VECTORDB_DIR}/chroma"
     )
     
-    # Sauvegarder la base
-    vectordb.persist()
+
     
     end_time = time.time()
     duration = end_time - start_time

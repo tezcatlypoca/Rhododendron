@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(root_dir))  # Pour accéder au dossier contenant
 
 # Import des modules
 from settings import PATH_CONFIG
-from src.rag_manager import RAGManager
+from src.vectorisation import Vectorisation
 
 def parse_args():
     """Parse command line arguments."""
@@ -95,8 +95,8 @@ def main():
         doc_dir = f"{data_dir}/documentation"
         print(f"Utilisation du répertoire de documentation alternatif: {doc_dir}")
     
-    # Initialiser le RAG Manager
-    rag_manager = RAGManager(
+    # Initialiser la Vectorisation
+    vectorisation = Vectorisation(
         vector_db_dir=vector_db_dir,
         data_dir=data_dir,
         excluded_dirs=args.exclude
@@ -110,11 +110,11 @@ def main():
         
         # Charger la base existante pour un test
         print("Test de la base existante...")
-        if rag_manager.load_vectordb():
-            stats = rag_manager.get_statistics()
+        if vectorisation.load_vectordb():
+            stats = vectorisation.get_statistics()
             if stats["status"] == "ok":
                 print(f"Base vectorielle existante contient {stats['document_count']} documents.")
-                test_results = rag_manager.test_search()
+                test_results = vectorisation.test_search()
                 print("Test de recherche réussi.")
                 sys.exit(0)
     
@@ -122,7 +122,9 @@ def main():
     
     # Charger les documents de code
     print(f"Chargement des documents depuis {source_dir}...")
-    code_docs = rag_manager.load_code_documents(source_dir, args.extensions)
+    # Conversion des extensions si nécessaire pour compatibilité
+    extensions_with_dot = [ext if ext.startswith('.') else f".{ext}" for ext in args.extensions]
+    code_docs = vectorisation.load_documents(source_dir, extensions_with_dot)
     
     if len(code_docs) == 0:
         print("Aucun document de code trouvé. Vérifiez le répertoire source et les extensions.")
@@ -132,11 +134,11 @@ def main():
     doc_docs = []
     if os.path.exists(doc_dir):
         print(f"Chargement de la documentation depuis {doc_dir}...")
-        doc_docs = rag_manager.load_documentation(doc_dir)
+        doc_docs = vectorisation.load_documentation(doc_dir)
         print(f"Chargés {len(doc_docs)} documents de documentation.")
     
         # Charger également les documents non-JSON de la documentation
-        doc_code_docs = rag_manager.load_code_documents(doc_dir, args.extensions)
+        doc_code_docs = vectorisation.load_documents(doc_dir, extensions_with_dot)
         print(f"Chargés {len(doc_code_docs)} fichiers de code additionnels depuis la documentation.")
         doc_docs.extend(doc_code_docs)
     else:
@@ -148,7 +150,7 @@ def main():
     
     # Créer la base vectorielle
     print("Création de la base vectorielle...")
-    success = rag_manager.create_vectordb(
+    success = vectorisation.create_vectordb(
         all_docs,
         force_recreate=args.force,
         max_chunks=15000  # Limiter le nombre de chunks pour éviter les problèmes de mémoire
@@ -158,14 +160,16 @@ def main():
         print("Base vectorielle créée avec succès!")
         
         # Charger la base pour les statistiques
-        rag_manager.load_vectordb()
-        stats = rag_manager.get_statistics()
+        vectorisation.load_vectordb()
+        stats = vectorisation.get_statistics()
         if stats["status"] == "ok":
             print(f"La base contient {stats['document_count']} documents.")
+            if "last_update" in stats:
+                print(f"Dernière mise à jour: {stats['last_update']}")
         
         # Tester la recherche
         print("Test de la base vectorielle...")
-        test_results = rag_manager.test_search()
+        test_results = vectorisation.test_search()
         print("Tests terminés.")
     else:
         print("Erreur lors de la création de la base vectorielle.")
