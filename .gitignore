@@ -33,3 +33,37 @@ secrets.json
 README.txt
 
 backend/src/data/
+
+# Frontend Angular
+node_modules/
+.angular/
+dist/
+.angular-cli.json
+
+# Fichiers générés lors du build de Angular
+frontend/.angular/cache/
+frontend/dist/
+frontend/coverage/
+
+# Fichiers générés par Angular CLI
+frontend/.sass-cache/
+frontend/connect.lock
+frontend/coverage/
+frontend/libpeerconnection.log
+frontend/npm-debug.log
+frontend/yarn-error.log
+frontend/e2e/*.js
+frontend/e2e/*.map
+
+# Fichiers de compilation TypeScript
+**/*.ngfactory.ts
+**/*.ngstyle.ts
+**/*.ngsummary.json
+
+# Environnements Angular
+frontend/src/environments/*.js
+frontend/src/environments/*.js.map
+
+# Autres fichiers spécifiques au projet
+.DS_Store
+Thumbs.db

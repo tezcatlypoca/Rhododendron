@@ -1,0 +1,18 @@
+<div class="container">
+  <header class="header">
+    <h1>CrewAI-Locale</h1>
+    <p class="subtitle">Vos orchestres d'intelligence artificielle</p>
+    <button class="btn-creer" (click)="handleCreerOrchestre()">
+      <i class="fas fa-plus-circle"></i> Créer un nouvel orchestre
+    </button>
+  </header>
+
+  <div class="orchestres-galerie">
+    <app-orchestre-card 
+      *ngFor="let orchestre of orchestres"
+      [orchestre]="orchestre"
+      (ouvrirOrchestre)="handleOuvrirOrchestre($event)"
+      (configurerOrchestre)="handleConfigurerOrchestre($event)">
+    </app-orchestre-card>
+  </div>
+</div>

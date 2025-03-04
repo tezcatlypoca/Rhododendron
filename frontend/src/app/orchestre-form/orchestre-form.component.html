@@ -1,0 +1,213 @@
+<div class="container">
+    <div *ngIf="isLoading" class="loading-container">
+      <div class="spinner"></div>
+      <p>Chargement du formulaire...</p>
+    </div>
+  
+    <div *ngIf="error" class="error-container">
+      <h2>Erreur</h2>
+      <p>{{ error }}</p>
+      <button class="btn-primary" (click)="cancel()">Retour</button>
+    </div>
+  
+    <div *ngIf="!isLoading && !error" class="form-container">
+      <div class="form-header">
+        <h1>{{ isEditMode ? 'Modifier' : 'Créer' }} un orchestre</h1>
+        <div class="actions">
+          <button type="button" class="btn-secondary" (click)="cancel()">Annuler</button>
+          <button type="button" class="btn-primary" [disabled]="orchestreForm.invalid || submitInProgress" (click)="onSubmit()">
+            <i class="fas" [ngClass]="{'fa-save': !submitInProgress, 'fa-spinner fa-spin': submitInProgress}"></i>
+            {{ isEditMode ? 'Enregistrer' : 'Créer' }}
+          </button>
+        </div>
+      </div>
+  
+      <form [formGroup]="orchestreForm" (ngSubmit)="onSubmit()">
+        <div class="form-section">
+          <h2>Informations de base</h2>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="nom">Nom de l'orchestre *</label>
+              <input type="text" id="nom" formControlName="nom" placeholder="Entrez un nom d'orchestre">
+              <div class="error-message" *ngIf="orchestreForm.get('nom')?.touched && orchestreForm.get('nom')?.invalid">
+                <span *ngIf="orchestreForm.get('nom')?.errors?.['required']">Le nom est requis</span>
+                <span *ngIf="orchestreForm.get('nom')?.errors?.['minlength']">Le nom doit contenir au moins 3 caractères</span>
+              </div>
+            </div>
+  
+            <div class="form-group">
+              <label for="specialite">Spécialité *</label>
+              <select id="specialite" formControlName="specialite">
+                <option *ngFor="let spec of specialites" [value]="spec">{{ spec }}</option>
+              </select>
+              <div class="error-message" *ngIf="orchestreForm.get('specialite')?.touched && orchestreForm.get('specialite')?.invalid">
+                <span *ngIf="orchestreForm.get('specialite')?.errors?.['required']">La spécialité est requise</span>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Section Instruments -->
+        <div class="form-section">
+          <div class="section-header">
+            <h2>Instruments</h2>
+            <button type="button" class="btn-add" (click)="addInstrument()">
+              <i class="fas fa-plus"></i> Ajouter un instrument
+            </button>
+          </div>
+  
+          <div class="accordion" formArrayName="instruments">
+            <div *ngIf="instrumentsArray.length === 0" class="empty-state">
+              <p>Aucun instrument ajouté</p>
+              <button type="button" class="btn-add" (click)="addInstrument()">
+                <i class="fas fa-plus"></i> Ajouter un instrument
+              </button>
+            </div>
+  
+            <div class="accordion-item" *ngFor="let instrument of instrumentsArray.controls; let i = index" [formGroupName]="i">
+              <div class="accordion-header">
+                <div class="accordion-title">
+                  <i class="fas fa-music"></i>
+                  {{ instrument.get('nom')?.value || 'Nouvel instrument' }}
+                  <span class="role-badge" *ngIf="instrument.get('role')?.value">{{ instrument.get('role')?.value }}</span>
+                </div>
+                <div class="accordion-actions">
+                  <button type="button" class="btn-remove" (click)="removeInstrument(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+  
+              <div class="accordion-content">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Nom de l'instrument *</label>
+                    <input type="text" formControlName="nom" placeholder="Ex: Frontend Maestro">
+                    <div class="error-message" *ngIf="instrument.get('nom')?.touched && instrument.get('nom')?.invalid">
+                      <span *ngIf="instrument.get('nom')?.errors?.['required']">Le nom est requis</span>
+                      <span *ngIf="instrument.get('nom')?.errors?.['minlength']">Le nom doit contenir au moins 2 caractères</span>
+                    </div>
+                  </div>
+  
+                  <div class="form-group">
+                    <label>Rôle *</label>
+                    <input type="text" formControlName="role" placeholder="Ex: Développeur">
+                    <div class="error-message" *ngIf="instrument.get('role')?.touched && instrument.get('role')?.invalid">
+                      <span *ngIf="instrument.get('role')?.errors?.['required']">Le rôle est requis</span>
+                    </div>
+                  </div>
+                </div>
+  
+                <div class="form-group">
+                  <label>Spécificités</label>
+                  <input type="text" formControlName="specificites" placeholder="Ex: Angular, React, CSS avancé (séparés par des virgules)">
+                </div>
+  
+                <!-- Capacités de l'instrument -->
+                <div class="capacites" formArrayName="capacites">
+                  <div class="sub-section-header">
+                    <h3>Capacités</h3>
+                    <button type="button" class="btn-add-small" (click)="addCapacite(i)">
+                      <i class="fas fa-plus"></i> Ajouter
+                    </button>
+                  </div>
+  
+                  <div *ngIf="getCapacitesArray(i).length === 0" class="empty-state-small">
+                    <p>Aucune capacité ajoutée</p>
+                  </div>
+  
+                  <div class="capacite-item" *ngFor="let capacite of getCapacitesArray(i).controls; let j = index" [formGroupName]="j">
+                    <div class="form-row">
+                      <div class="form-group capacite-nom">
+                        <input type="text" formControlName="nom" placeholder="Nom de la capacité">
+                        <div class="error-message" *ngIf="capacite.get('nom')?.touched && capacite.get('nom')?.invalid">
+                          <span *ngIf="capacite.get('nom')?.errors?.['required']">Le nom est requis</span>
+                        </div>
+                      </div>
+  
+                      <div class="form-group capacite-niveau">
+                        <label class="range-label">Niveau: {{ capacite.get('niveau')?.value }}/5</label>
+                        <input type="range" min="1" max="5" formControlName="niveau">
+                      </div>
+  
+                      <button type="button" class="btn-remove-small" (click)="removeCapacite(i, j)">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <!-- Section Projets -->
+        <div class="form-section">
+          <div class="section-header">
+            <h2>Projets</h2>
+            <button type="button" class="btn-add" (click)="addProjet()">
+              <i class="fas fa-plus"></i> Ajouter un projet
+            </button>
+          </div>
+  
+          <div class="accordion" formArrayName="projets">
+            <div *ngIf="projetsArray.length === 0" class="empty-state">
+              <p>Aucun projet ajouté</p>
+              <button type="button" class="btn-add" (click)="addProjet()">
+                <i class="fas fa-plus"></i> Ajouter un projet
+              </button>
+            </div>
+  
+            <div class="accordion-item" *ngFor="let projet of projetsArray.controls; let i = index" [formGroupName]="i">
+              <div class="accordion-header">
+                <div class="accordion-title">
+                  <i class="fas fa-folder"></i>
+                  {{ projet.get('nom')?.value || 'Nouveau projet' }}
+                  <span class="type-badge" *ngIf="projet.get('type')?.value">{{ projet.get('type')?.value }}</span>
+                </div>
+                <div class="accordion-actions">
+                  <button type="button" class="btn-remove" (click)="removeProjet(i)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+  
+              <div class="accordion-content">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Nom du projet *</label>
+                    <input type="text" formControlName="nom" placeholder="Ex: Site E-commerce">
+                    <div class="error-message" *ngIf="projet.get('nom')?.touched && projet.get('nom')?.invalid">
+                      <span *ngIf="projet.get('nom')?.errors?.['required']">Le nom est requis</span>
+                      <span *ngIf="projet.get('nom')?.errors?.['minlength']">Le nom doit contenir au moins 2 caractères</span>
+                    </div>
+                  </div>
+  
+                  <div class="form-group">
+                    <label>Type *</label>
+                    <input type="text" formControlName="type" placeholder="Ex: Web, Mobile, API...">
+                    <div class="error-message" *ngIf="projet.get('type')?.touched && projet.get('type')?.invalid">
+                      <span *ngIf="projet.get('type')?.errors?.['required']">Le type est requis</span>
+                    </div>
+                  </div>
+                </div>
+  
+                <div class="form-group">
+                  <label>Description</label>
+                  <textarea formControlName="description" rows="3" placeholder="Description du projet..."></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+  
+        <div class="form-actions">
+          <button type="button" class="btn-secondary" (click)="cancel()">Annuler</button>
+          <button type="submit" class="btn-primary" [disabled]="orchestreForm.invalid || submitInProgress">
+            <i class="fas" [ngClass]="{'fa-save': !submitInProgress, 'fa-spinner fa-spin': submitInProgress}"></i>
+            {{ isEditMode ? 'Enregistrer' : 'Créer l\'orchestre' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>

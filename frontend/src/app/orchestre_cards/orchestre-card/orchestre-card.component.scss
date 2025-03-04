@@ -1,0 +1,198 @@
+.orchestre-card {
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+  transition: transform 0.3s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  
+  &:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.12);
+  }
+}
+
+.orchestre-header {
+  padding: 1.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  &.dev {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+  }
+  
+  &.com {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+  }
+  
+  &.data {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  }
+  
+  .header-content {
+    flex: 1;
+  }
+  
+  h2 {
+    color: white;
+    margin: 0 0 0.8rem 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  
+  .specialite-badge {
+    background-color: rgba(255,255,255,0.25);
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: inline-block;
+  }
+  
+  .orchestre-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255,255,255,0.15);
+    border-radius: 50%;
+    margin-left: 1rem;
+    
+    i {
+      color: white;
+      font-size: 1.8rem;
+    }
+  }
+}
+
+.orchestre-content {
+  padding: 1.8rem;
+  flex: 1;
+  
+  .date-creation {
+    color: #888;
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .orchestre-meta {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      color: #555;
+      
+      i {
+        color: #777;
+      }
+    }
+  }
+  
+  h3 {
+    margin: 0 0 1rem 0;
+    color: #444;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    
+    i {
+      color: #666;
+    }
+  }
+}
+
+.instruments-preview {
+  .instruments-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    
+    .instrument-chip, .more-chip {
+      background-color: #f0f4f8;
+      padding: 0.5rem 1rem;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      color: #555;
+      font-weight: 500;
+      transition: all 0.2s;
+      
+      &:hover {
+        background-color: #e6edf5;
+      }
+    }
+    
+    .more-chip {
+      background-color: #eee;
+      color: #777;
+    }
+  }
+}
+
+.orchestre-footer {
+  display: flex;
+  padding: 1.2rem 1.8rem;
+  border-top: 1px solid #eee;
+  gap: 1rem;
+  align-items: center;
+  
+  button {
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  
+  .btn-ouvrir {
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+    
+    &:hover {
+      background-color: #0b7dda;
+      box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+    }
+  }
+  
+  .btn-configurer {
+    background-color: #f5f5f5;
+    border: none;
+    color: #666;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.8rem;
+    border-radius: 8px;
+    
+    &:hover {
+      background-color: #ececec;
+    }
+    
+    i {
+      font-size: 1.1rem;
+    }
+  }
+}

@@ -1,0 +1,63 @@
+<header class="app-header">
+  <div class="container">
+    <div class="header-content">
+      <!-- Logo et navigation principale -->
+      <div class="header-left">
+        <a routerLink="/" class="logo">
+          CrewAI-Locale
+        </a>
+        <nav class="main-nav">
+          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">Accueil</a>
+          <a routerLink="/nouvelle-orchestre" routerLinkActive="active">Créer un Orchestre</a>
+        </nav>
+      </div>
+      
+      <!-- Profil utilisateur -->
+      <div class="header-right">
+        <ng-container *ngIf="currentUser; else loginButton">
+          <div class="user-profile" (click)="toggleMenu()">
+            <div class="user-avatar" [style.backgroundImage]="'url(' + getAvatarUrl() + ')'"></div>
+            <span class="user-name">{{ currentUser.username }}</span>
+            <i class="fas fa-chevron-down"></i>
+            
+            <!-- Menu déroulant -->
+            <div class="user-menu" [class.open]="isMenuOpen">
+              <div class="user-info">
+                <div class="user-avatar large" [style.backgroundImage]="'url(' + getAvatarUrl() + ')'"></div>
+                <div class="user-details">
+                  <div class="user-fullname">{{ currentUser.firstName }} {{ currentUser.lastName }}</div>
+                  <div class="user-email">{{ currentUser.email }}</div>
+                  <div class="user-role">{{ currentUser.role | titlecase }}</div>
+                </div>
+              </div>
+              <div class="menu-items">
+                <div class="menu-item orchestra-count">
+                  <i class="fas fa-music"></i> 
+                  <span *ngIf="getOrchestreCount() > 0">
+                    {{ getOrchestreCount() }} orchestre{{ getOrchestreCount() > 1 ? 's' : '' }}
+                  </span>
+                  <span *ngIf="getOrchestreCount() === 0">
+                    Aucun orchestre
+                  </span>
+                </div>
+                <button (click)="logout()" class="menu-item logout">
+                  <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </button>
+              </div>
+            </div>
+          </div>
+        </ng-container>
+        
+        <ng-template #loginButton>
+          <a routerLink="/login" class="login-button">
+            <i class="fas fa-sign-in-alt"></i>
+            Connexion
+          </a>
+        </ng-template>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- Overlay pour fermer le menu quand on clique ailleurs -->
+<div class="menu-overlay" *ngIf="isMenuOpen" (click)="toggleMenu()"></div>

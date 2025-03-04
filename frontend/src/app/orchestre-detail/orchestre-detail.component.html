@@ -1,0 +1,146 @@
+<div class="container" *ngIf="isLoading">
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Chargement de l'orchestre...</p>
+    </div>
+  </div>
+  
+  <div class="container" *ngIf="error">
+    <div class="error-container">
+      <h2>Erreur</h2>
+      <p>{{ error }}</p>
+      <button class="btn-back" (click)="navigateBack()">Retour à l'accueil</button>
+    </div>
+  </div>
+  
+  <div class="container" *ngIf="!isLoading && !error && orchestre">
+    <div class="header-actions">
+      <button class="btn-back" (click)="navigateBack()">
+        <i class="fas fa-arrow-left"></i> Retour
+      </button>
+      <button class="btn-edit" (click)="navigateToEdit()">
+        <i class="fas fa-cog"></i> Configurer
+      </button>
+    </div>
+  
+    <div class="orchestre-header" [ngClass]="{
+        'dev': orchestre.specialite === 'Développement', 
+        'com': orchestre.specialite === 'Communication',
+        'data': orchestre.specialite === 'Analyse'
+      }">
+      <div class="header-content">
+        <h1>{{ orchestre.nom }}</h1>
+        <div class="meta-info">
+          <span class="specialite">{{ orchestre.specialite }}</span>
+          <span class="date">Créé le {{ orchestre.dateCreation | date:'dd/MM/yyyy' }}</span>
+        </div>
+      </div>
+      <div class="header-icon">
+        <i class="fas" [ngClass]="{
+            'fa-code': orchestre.specialite === 'Développement', 
+            'fa-bullhorn': orchestre.specialite === 'Communication',
+            'fa-chart-pie': orchestre.specialite === 'Analyse'
+          }"></i>
+      </div>
+    </div>
+  
+    <div class="tabs">
+      <button class="tab-button" [class.active]="activeTab === 'instruments'" (click)="setActiveTab('instruments')">
+        <i class="fas fa-music"></i> Instruments ({{ orchestre.instruments.length || 0 }})
+      </button>
+      <button class="tab-button" [class.active]="activeTab === 'projets'" (click)="setActiveTab('projets')">
+        <i class="fas fa-folder-open"></i> Projets ({{ orchestre.projets?.length || 0 }})
+      </button>
+    </div>
+  
+    <div class="tab-content" *ngIf="activeTab === 'instruments'">
+      <div class="action-bar">
+        <h2>Instruments de l'orchestre</h2>
+        <button class="btn-add">
+          <i class="fas fa-plus"></i> Ajouter un instrument
+        </button>
+      </div>
+      
+      <div class="instruments-list" *ngIf="orchestre?.instruments?.length">
+        <div class="instrument-card" *ngFor="let instrument of orchestre?.instruments">
+          <div class="instrument-header">
+            <h3>{{ instrument.nom }}</h3>
+            <span class="role-badge">{{ instrument.role }}</span>
+          </div>
+          <div class="instrument-content">
+            <div class="specificites">
+              <h4>Spécificités</h4>
+              <ul>
+                <li *ngFor="let spec of instrument.specificites">{{ spec }}</li>
+              </ul>
+            </div>
+            <div class="capacites" *ngIf="instrument.capacites?.length">
+              <h4>Capacités</h4>
+              <div class="capacite-item" *ngFor="let capacite of instrument.capacites">
+                <div class="capacite-name">{{ capacite.nom }}</div>
+                <div class="capacite-level">
+                  <div class="level-bar">
+                    <div class="level-fill" [style.width.%]="capacite.niveau * 20"></div>
+                  </div>
+                  <span class="level-text">{{ capacite.niveau }}/5</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="instrument-actions">
+            <button class="btn-edit-small">
+              <i class="fas fa-pencil-alt"></i>
+            </button>
+            <button class="btn-remove">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="empty-state" *ngIf="!orchestre?.instruments?.length">
+        <i class="fas fa-music empty-icon"></i>
+        <p>Cet orchestre ne contient pas encore d'instruments.</p>
+        <button class="btn-add">
+          <i class="fas fa-plus"></i> Ajouter un instrument
+        </button>
+      </div>
+    </div>
+  
+    <div class="tab-content" *ngIf="activeTab === 'projets'">
+      <div class="action-bar">
+        <h2>Projets associés</h2>
+        <button class="btn-add">
+          <i class="fas fa-plus"></i> Ajouter un projet
+        </button>
+      </div>
+      
+      <div class="projets-list" *ngIf="orchestre?.projets?.length">
+        <div class="projet-card" *ngFor="let projet of orchestre?.projets">
+          <div class="projet-header">
+            <h3>{{ projet.nom }}</h3>
+            <span class="type-badge">{{ projet.type }}</span>
+          </div>
+          <div class="projet-content">
+            <p class="description">{{ projet.description }}</p>
+          </div>
+          <div class="projet-actions">
+            <button class="btn-edit-small">
+              <i class="fas fa-pencil-alt"></i>
+            </button>
+            <button class="btn-remove">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="empty-state" *ngIf="!orchestre?.projets?.length">
+        <i class="fas fa-folder-open empty-icon"></i>
+        <p>Cet orchestre n'est associé à aucun projet.</p>
+        <button class="btn-add">
+          <i class="fas fa-plus"></i> Ajouter un projet
+        </button>
+      </div>
+    </div>
+  </div>
