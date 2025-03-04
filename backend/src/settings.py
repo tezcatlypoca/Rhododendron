@@ -7,6 +7,7 @@ load_dotenv()
 # Accéder aux variables
 APP_ENV = os.getenv("APP_ENV", "development")
 DEBUG = os.getenv("DEBUG", "True") == "True"
+MODEL_NAME = "codellama:7b-instruct-q4_0"
 
 DB_CONFIG = {
     "type": os.getenv("DB_TYPE", "sqlite"),

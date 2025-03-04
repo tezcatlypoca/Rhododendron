@@ -23,7 +23,7 @@ class Agent:
             system_prompt: Prompt système qui définit le comportement de l'agent
             api_url: URL de l'API Ollama
     """
-    def __init__(self, name: str, role: RoleDTO, model_name: str, temperature: float = 0.7):
+    def __init__(self, name: str, role: Role, model_name: str, temperature: float = 0.7):
         self.name = name
         self.role = role
         self.model_name = model_name
@@ -129,8 +129,8 @@ class Agent:
     
 # END CLASS
 
-if __name__ == "__main__":
-    # dev_agent = Agent(name="Test", role=DeveloperDTO(), model_name="codellama:7b-instruct-q4_0", temperature=0.7)
-    # response = dev_agent.query("Comment gérer des conflits entre collègues ? En français")
-    # print(response)
-    print("coucou")
+# if __name__ == "__main__":
+#     # dev_agent = Agent(name="Test", role=DeveloperDTO(), model_name="codellama:7b-instruct-q4_0", temperature=0.7)
+#     # response = dev_agent.query("Comment gérer des conflits entre collègues ? En français")
+#     # print(response)
+#     print("coucou")

@@ -20,7 +20,7 @@ La structure suivante de DTOs est proposée pour faciliter les échanges de donn
 | **ConfigurationDTO** | Paramètres de configuration | Personnalisation du système |
 | **SessionDTO** | Session de travail | Encapsulation d'une session complète |
 | **MetricsDTO** | Métriques de performance | Monitoring et analytics |
-| **WorkspaceDTO** | Espace de travail partagé | Interface avec LangChain |
+| **OrchestreDTO** | Espace de travail partagé | Interface avec LangChain |
 | **MessagingDTO** | Système de messagerie | Communication entre composants |
 
 ## Détails des DTOs
@@ -60,7 +60,7 @@ La structure suivante de DTOs est proposée pour faciliter les échanges de donn
 - Version
 - Agent créateur
 
-### WorkspaceDTO
+### OrchestreDTO
 - Agents actifs
 - Ressources disponibles
 - Contexte partagé
