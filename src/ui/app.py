@@ -1,492 +1,584 @@
 import streamlit as st
-import os, tempfile, zipfile, io, json, time
-from langchain_community.document_loaders import TextLoader, DirectoryLoader
-from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_community.llms import Ollama
-from langchain.prompts import PromptTemplate
-from langchain.chains import LLMChain
-from settings import PATH_CONFIG
+import pandas as pd
+from PIL import Image
+import random
+import os
 
-# Configuration - MISE À JOUR DU CHEMIN POUR VOTRE 
-BASE_DIR = PATH_CONFIG['base']
-GENERATED_DIR = PATH_CONFIG['generated_prompt']
-VECTORDB_DIR = PATH_CONFIG['vector_db']
-
-# Créer le dossier pour les fichiers générés
-os.makedirs(GENERATED_DIR, exist_ok=True)
-
-# Configuration de la page Streamlit
+# Configuration de la page
 st.set_page_config(
-    page_title="Flutter/Java RAG Generator",
-    page_icon="🚀",
+    page_title="Rhododendron - Orchestration",
+    page_icon="🎵",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# CSS personnalisé
+# Initialisation de la session state pour la navigation
+if 'page' not in st.session_state:
+    st.session_state.page = 'home'
+if 'selected_orchestra' not in st.session_state:
+    st.session_state.selected_orchestra = None
+
+# Fonction pour générer des données fictives d'orchestres
+def generate_sample_orchestras(num_orchestras=5):
+    orchestra_types = ["Développement", "Communication", "Design", "Marketing", "Recherche"]
+    orchestra_names = [f"Orchestre {random.choice(['Alpha', 'Beta', 'Gamma', 'Delta', 'Omega', 'Nova', 'Stellar', 'Quantum', 'Phoenix', 'Nebula'])} {i+1}" for i in range(num_orchestras)]
+    
+    orchestras = []
+    for i in range(num_orchestras):
+        orch_type = random.choice(orchestra_types)
+        
+        # Définir les instruments en fonction du type d'orchestre
+        if orch_type == "Développement":
+            instruments = [
+                {"name": "Développeur", "description": "Code les fonctionnalités"},
+                {"name": "Testeur", "description": "Vérifie la qualité du code"},
+                {"name": "Manageur", "description": "Organise les priorités"},
+                {"name": "Architecte", "description": "Conçoit la structure technique"}
+            ]
+        elif orch_type == "Communication":
+            instruments = [
+                {"name": "Rédacteur", "description": "Crée le contenu écrit"},
+                {"name": "Designer", "description": "Conçoit les visuels"},
+                {"name": "Community Manager", "description": "Gère les réseaux sociaux"},
+                {"name": "Stratège", "description": "Planifie les campagnes"}
+            ]
+        elif orch_type == "Design":
+            instruments = [
+                {"name": "UX Designer", "description": "Crée l'expérience utilisateur"},
+                {"name": "UI Designer", "description": "Conçoit les interfaces"},
+                {"name": "Graphiste", "description": "Produit les éléments graphiques"},
+                {"name": "Prototypeur", "description": "Teste les concepts"}
+            ]
+        elif orch_type == "Marketing":
+            instruments = [
+                {"name": "Analyste", "description": "Étudie les données du marché"},
+                {"name": "Contenu", "description": "Crée les supports marketing"},
+                {"name": "SEO", "description": "Optimise la visibilité"},
+                {"name": "Croissance", "description": "Développe l'audience"}
+            ]
+        else:  # Recherche
+            instruments = [
+                {"name": "Chercheur", "description": "Explore de nouveaux domaines"},
+                {"name": "Analyste de données", "description": "Traite les informations"},
+                {"name": "Documentaliste", "description": "Organise les connaissances"},
+                {"name": "Expérimentateur", "description": "Teste les hypothèses"}
+            ]
+        
+        # Créer des projets fictifs pour cet orchestre
+        num_projects = random.randint(1, 3)
+        projects = []
+        for j in range(num_projects):
+            project_status = random.choice(["En cours", "Planifié", "Terminé", "En pause"])
+            project_names = [
+                "Refonte du site", "Application mobile", "Campagne Q2", "Étude utilisateurs",
+                "Intégration API", "Restructuration", "Automatisation", "Analyse de données"
+            ]
+            projects.append({
+                "name": random.choice(project_names) + f" {j+1}",
+                "status": project_status,
+                "progress": random.randint(0, 100) if project_status != "Planifié" else 0,
+                "assigned_instruments": random.sample([instr["name"] for instr in instruments], random.randint(1, len(instruments)))
+            })
+        
+        # Date de création aléatoire
+        date_created = f"{random.randint(1, 28)}/{random.randint(1, 12)}/2024"
+        
+        # Statut aléatoire
+        status = random.choice(["Actif", "En pause", "Archivé", "En préparation"])
+        
+        orchestras.append({
+            "name": orchestra_names[i],
+            "type": orch_type,
+            "instruments": instruments,
+            "projects": projects,
+            "date_created": date_created,
+            "status": status
+        })
+    
+    return orchestras
+
+# Styles CSS personnalisés
 st.markdown("""
 <style>
-    .main .block-container {
-        padding-top: 2rem;
-    }
-    .stTextArea textarea {
-        font-family: monospace;
-    }
-    .highlight {
+    .orchestra-card {
         background-color: #f0f2f6;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s;
     }
-    .info-box {
-        background-color: #e1f5fe;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
+    .orchestra-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
     }
-    .warning-box {
-        background-color: #fff3e0;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        margin-bottom: 1rem;
+    .orchestra-title {
+        color: #1E3A8A;
+        font-size: 24px;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+    .orchestra-type {
+        color: #4B5563;
+        font-size: 16px;
+        margin-bottom: 5px;
+    }
+    .orchestra-date {
+        color: #6B7280;
+        font-size: 14px;
+        margin-bottom: 15px;
+    }
+    .instrument-tag {
+        background-color: #E5E7EB;
+        border-radius: 15px;
+        padding: 5px 10px;
+        margin-right: 5px;
+        margin-bottom: 5px;
+        display: inline-block;
+        font-size: 12px;
+    }
+    .status-tag {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .status-active {
+        background-color: #D1FAE5;
+        color: #065F46;
+    }
+    .status-paused {
+        background-color: #FEF3C7;
+        color: #92400E;
+    }
+    .status-archived {
+        background-color: #F3F4F6;
+        color: #4B5563;
+    }
+    .status-prep {
+        background-color: #DBEAFE;
+        color: #1E40AF;
+    }
+    .add-btn {
+        background-color: #1E3A8A;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        text-align: center;
+        cursor: pointer;
+        margin-top: 20px;
+        font-weight: bold;
+    }
+    .centered {
+        display: flex;
+        justify-content: center;
+    }
+    .back-btn {
+        display: inline-flex;
+        align-items: center;
+        color: #1E3A8A;
+        font-weight: 500;
+        margin-bottom: 20px;
+        cursor: pointer;
+    }
+    .section-title {
+        margin-top: 30px;
+        margin-bottom: 15px;
+        color: #1E3A8A;
+        font-size: 20px;
+        font-weight: 600;
+    }
+    .btn-primary {
+        background-color: #1E3A8A;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    .btn-secondary {
+        background-color: #E5E7EB;
+        color: #4B5563;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+    }
+    /* Personnaliser les boutons Streamlit pour qu'ils soient visibles et attrayants */
+    .stButton>button {
+        background-color: #1E3A8A !important;
+        color: white !important;
+        border: none !important;
+        padding: 0.5rem 1rem !important;
+        font-size: 0.875rem !important;
+        border-radius: 0.375rem !important;
+        margin-top: 0.5rem !important;
+        width: 100% !important;
+        display: block !important;
+    }
+    .stButton>button:hover {
+        background-color: #1e4cba !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# Fonction pour charger la base vectorielle
-@st.cache_resource
-def charger_base_vectorielle():
-    """Charge la base vectorielle pour la recherche."""
-    embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2",
-    model_kwargs={'device': 'cpu'}
-)
+# Fonction pour afficher la page d'accueil
+def show_home_page():
+    st.title("🎵 Rhododendron - Orchestration")
+    st.markdown("### Bienvenue dans votre plateforme d'orchestration")
+    st.markdown("---")
     
-    # Vérifier si la base vectorielle existe
-    if not os.path.exists(f"{VECTORDB_DIR}/chroma"):
-        st.error("Base vectorielle non trouvée. Veuillez la créer d'abord.")
-        st.stop()
+    # Générer des orchestres fictifs
+    orchestras = generate_sample_orchestras(6)
     
-    # Charger la base
-    vectordb = Chroma(
-        persist_directory=f"{VECTORDB_DIR}/chroma",
-        embedding_function=embeddings
-    )
+    # Filtres et contenu de la page d'accueil...
+    return orchestras
+
+# Fonction pour afficher la page de détail d'un orchestre
+def show_orchestra_detail(orchestra):
+    # Bouton de retour explicite
+    back_btn = st.button("← Retour aux orchestres", key="back_btn")
+    if back_btn:
+        st.session_state.page = "home"
+        st.session_state.selected_orchestra = None
+        st.rerun()
     
-    return vectordb
-
-# Fonction pour charger le modèle LLM
-@st.cache_resource
-def charger_llm(model_name, temperature):
-    """Charge le modèle LLM avec Ollama."""
-    return Ollama(model=model_name, temperature=temperature)
-
-# Fonction pour la recherche de contexte
-def rechercher_contexte(query, vectordb, k=5):
-    """Recherche du contexte pertinent dans la base vectorielle."""
-    documents = vectordb.similarity_search(query, k=k)
+    # Affichage du titre et des informations de l'orchestre
+    st.title(f"Orchestre: {orchestra['name']}")
     
-    # Extraire le contenu et les métadonnées
-    resultats = []
-    for doc in documents:
-        resultats.append({
-            "contenu": doc.page_content,
-            "source": doc.metadata.get("source", "Inconnue")
-        })
-    
-    # Formatter le contexte
-    contexte = ""
-    for i, res in enumerate(resultats):
-        source = os.path.basename(res["source"]) if isinstance(res["source"], str) else "Inconnue"
-        contexte += f"--- Document {i+1} (Source: {source}) ---\n"
-        contexte += res["contenu"] + "\n\n"
-    
-    return contexte, resultats
-
-# Templates de prompt avec contexte
-PROMPT_TEMPLATES = {
-    "composant_ui": """
-Tu es un expert en développement Flutter et Java pour applications Android.
-Tu dois générer un composant d'interface utilisateur selon les spécifications.
-
-Voici du code de projets similaires qui pourrait t'aider:
-------------------------
-{contexte}
-------------------------
-
-Cahier des charges: {cahier_charges}
-
-Génère le code complet du composant UI avec:
-1. Le code source bien structuré et commenté
-2. Des explications sur les choix d'implémentation
-3. Les dépendances nécessaires
-4. Des conseils pour l'intégration
-
-Utilise les meilleures pratiques Flutter/Dart et assure-toi que le composant est:
-- Réutilisable
-- Performant
-- Accessible
-- Compatible avec les différentes tailles d'écran
-""",
-
-    "authentification": """
-Tu es un expert en développement Flutter et Java pour applications Android.
-Tu dois générer un système d'authentification selon les spécifications.
-
-Voici du code de projets similaires qui pourrait t'aider:
-------------------------
-{contexte}
-------------------------
-
-Cahier des charges: {cahier_charges}
-
-Génère le code complet du système d'authentification avec:
-1. Le code source bien structuré et commenté
-2. La gestion des états d'authentification
-3. Les validations de formulaires
-4. La gestion des erreurs
-5. Les dépendances nécessaires
-
-Utilise les meilleures pratiques de sécurité et d'architecture.
-""",
-
-    "architecture": """
-Tu es un expert en développement Flutter et Java pour applications Android.
-Tu dois générer l'architecture d'un projet selon les spécifications.
-
-Voici du code de projets similaires qui pourrait t'aider:
-------------------------
-{contexte}
-------------------------
-
-Cahier des charges: {cahier_charges}
-
-Génère une architecture complète avec:
-1. La structure des dossiers
-2. Les fichiers principaux
-3. Les patterns d'architecture recommandés (MVC, MVVM, BLoC, etc.)
-4. Les dépendances nécessaires
-5. Des explications sur les choix d'architecture
-
-Utilise les meilleures pratiques d'architecture et de développement.
-""",
-
-    "api_integration": """
-Tu es un expert en développement Flutter et Java pour applications Android.
-Tu dois générer du code pour intégrer une API selon les spécifications.
-
-Voici du code de projets similaires qui pourrait t'aider:
-------------------------
-{contexte}
-------------------------
-
-Cahier des charges: {cahier_charges}
-
-Génère le code complet d'intégration API avec:
-1. Les modèles de données
-2. Les services/repositories
-3. La gestion des erreurs et timeouts
-4. La mise en cache (si nécessaire)
-5. Les dépendances nécessaires
-
-Utilise les meilleures pratiques d'intégration API et de développement.
-""",
-
-    "general": """
-Tu es un expert en développement Flutter et Java pour applications Android.
-Ta tâche est de générer du code selon les spécifications.
-
-Voici du code de projets similaires qui pourrait t'aider:
-------------------------
-{contexte}
-------------------------
-
-Cahier des charges: {cahier_charges}
-
-Génère le code complet avec:
-1. Le code source bien structuré et commenté
-2. Des explications sur les choix d'implémentation
-3. Les dépendances nécessaires
-4. Des conseils pour l'utilisation et l'intégration
-
-Utilise les meilleures pratiques Flutter/Dart/Java et assure-toi que le code soit performant et bien structuré.
-"""
-}
-
-# Application Streamlit
-def main():
-    st.title("🚀 Générateur de Code Flutter/Java avec RAG")
-    st.markdown(
-        """
-        <div class="info-box">
-        Cet outil utilise un système RAG (Retrieval-Augmented Generation) pour générer du code Flutter/Java 
-        de haute qualité en utilisant votre base de connaissances personnelle.
-        </div>
-        """, 
-        unsafe_allow_html=True
-    )
-    
-    # Barre latérale pour les paramètres
-    with st.sidebar:
-        st.header("⚙️ Paramètres")
-        
-        # Sélection du modèle
-        model_options = {
-            "codellama:7b-instruct-q4_0": "CodeLlama 7B (Recommandé pour le code)",
-            "mistral:7b-instruct-q4_0": "Mistral 7B (Alternative, bon équilibre)",
-            "phi2:q4_0": "Phi-2 (Plus léger, moins précis)"
-        }
-        model_name = st.selectbox(
-            "Modèle LLM", 
-            list(model_options.keys()),
-            format_func=lambda x: model_options[x]
-        )
-        
-        # Paramètres de génération
-        st.subheader("Paramètres de génération")
-        temperature = st.slider("Température", 0.0, 1.0, 0.2, 0.1, 
-                              help="Plus la valeur est basse, plus la génération est déterministe")
-        
-        k_documents = st.slider("Nombre de documents à récupérer", 2, 15, 5,
-                              help="Nombre de documents à utiliser comme contexte")
-        
-        # Type de projet
-        st.subheader("Type de projet")
-        project_type = st.radio(
-            "Plateforme cible",
-            ["Flutter", "Java Android", "Les deux"]
-        )
-        
-        # Template de prompt
-        st.subheader("Template de prompt")
-        template_type = st.selectbox(
-            "Type de génération",
-            ["general", "composant_ui", "authentification", "architecture", "api_integration"],
-            format_func=lambda x: {
-                "general": "Général",
-                "composant_ui": "Composant UI",
-                "authentification": "Authentification",
-                "architecture": "Architecture",
-                "api_integration": "Intégration API"
-            }[x]
-        )
-        
-        # Histoire des générations
-        st.subheader("Historique")
-        if "history" in st.session_state and st.session_state.history:
-            for i, item in enumerate(st.session_state.history):
-                if st.button(f"{item['title'][:25]}...", key=f"history_{i}"):
-                    st.session_state.cahier_charges = item["cahier_charges"]
-                    st.session_state.generated_code = item["code"]
-        else:
-            st.info("Aucune génération dans l'historique.")
-
-    # Interface principale
-    col1, col2 = st.columns([1, 1])
-    
+    # En-tête avec les informations générales
+    col1, col2, col3 = st.columns([2, 1, 1])
     with col1:
-        st.header("📝 Cahier des charges")
-        
-        # Titre du projet
-        project_title = st.text_input(
-            "Titre du projet ou composant",
-            value=st.session_state.get("project_title", ""),
-            help="Un titre court et descriptif pour votre projet ou composant"
-        )
-        
-        # Cahier des charges
-        cahier_charges = st.text_area(
-            "Décrivez les fonctionnalités souhaitées",
-            height=300,
-            value=st.session_state.get("cahier_charges", ""),
-            help="Soyez précis dans votre description pour obtenir un meilleur résultat",
-            placeholder="""Exemple: 
-Créer une page de connexion Flutter avec les fonctionnalités suivantes:
-- Champs email et mot de passe avec validation
-- Bouton de connexion avec indicateur de chargement
-- Option "Mot de passe oublié"
-- Connexion via Google et Facebook
-- Navigation vers la page d'inscription
-- Stockage du token JWT après connexion
-- Compatible dark/light mode
-"""
-        )
-        
-        # Options avancées
-        with st.expander("Options avancées"):
-            include_tests = st.checkbox("Générer des tests", value=False)
-            include_docs = st.checkbox("Inclure la documentation", value=True)
-            include_dependencies = st.checkbox("Lister les dépendances", value=True)
-        
-        # Bouton de génération
-        gen_button = st.button("🔮 Générer le code", type="primary", use_container_width=True)
-        
-        # Aperçu du contexte
-        if "context_results" in st.session_state:
-            with st.expander("Aperçu du contexte récupéré"):
-                for i, res in enumerate(st.session_state.context_results):
-                    source = os.path.basename(res["source"]) if isinstance(res["source"], str) else "Inconnue"
-                    st.markdown(f"**Document {i+1}** - Source: `{source}`")
-                    st.code(res["contenu"][:300] + "..." if len(res["contenu"]) > 300 else res["contenu"])
-    
+        st.markdown(f"**Type**: {orchestra['type']}")
     with col2:
-        st.header("💻 Code généré")
-        
-        # Affichage du code généré
-        if "generated_code" in st.session_state:
-            generated_code = st.session_state.generated_code
-            
-            # Onglets pour différentes parties du code
-            code_parts = generated_code.split("```")
-            
-            if len(code_parts) > 1:
-                # Extraction des blocs de code
-                code_blocks = []
-                for i in range(1, len(code_parts), 2):
-                    if i < len(code_parts):
-                        lang = code_parts[i].split("\n")[0].strip()
-                        code = "\n".join(code_parts[i].split("\n")[1:])
-                        code_blocks.append((lang, code))
-                
-                # S'il y a des blocs de code
-                if code_blocks:
-                    tabs = st.tabs([f"Fichier {i+1}" for i in range(len(code_blocks))])
-                    
-                    for i, (tab, (lang, code)) in enumerate(zip(tabs, code_blocks)):
-                        with tab:
-                            st.code(code, language=lang if lang in ["dart", "java", "kotlin", "yaml", "xml", "json"] else None)
-                
-                # Afficher les explications
-                for i in range(0, len(code_parts), 2):
-                    if code_parts[i].strip():
-                        st.markdown(code_parts[i])
-            else:
-                # Pas de blocs de code, afficher comme un seul bloc
-                st.code(generated_code)
-            
-            # Boutons d'action
-            col_download, col_save = st.columns(2)
-            
-            with col_download:
-                # Créer un zip avec tous les fichiers
-                if st.button("📦 Télécharger en ZIP", use_container_width=True):
-                    # Extraire les fichiers du code généré
-                    zip_buffer = io.BytesIO()
-                    with zipfile.ZipFile(zip_buffer, "w") as zf:
-                        # Créer un fichier pour chaque bloc de code
-                        for i, (lang, code) in enumerate(code_blocks):
-                            # Déterminer l'extension de fichier
-                            ext = {
-                                "dart": ".dart",
-                                "java": ".java",
-                                "kotlin": ".kt",
-                                "yaml": ".yaml",
-                                "xml": ".xml",
-                                "json": ".json"
-                            }.get(lang, ".txt")
-                            
-                            file_name = f"file_{i+1}{ext}"
-                            zf.writestr(file_name, code)
-                    
-                    # Proposer le téléchargement
-                    zip_buffer.seek(0)
-                    project_name = project_title.replace(" ", "_") if project_title else "generated_code"
-                    st.download_button(
-                        "⬇️ Télécharger ZIP",
-                        zip_buffer,
-                        file_name=f"{project_name}.zip",
-                        mime="application/zip",
-                        use_container_width=True
-                    )
-            
-            with col_save:
-                # Sauvegarder dans l'historique
-                if st.button("💾 Enregistrer dans l'historique", use_container_width=True):
-                    if "history" not in st.session_state:
-                        st.session_state.history = []
-                    
-                    # Ajouter à l'historique
-                    st.session_state.history.append({
-                        "title": project_title if project_title else "Sans titre",
-                        "cahier_charges": cahier_charges,
-                        "code": generated_code,
-                        "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")
-                    })
-                    
-                    st.success("Sauvegardé dans l'historique!")
-                    # Recharger la page pour mettre à jour l'historique
-                    st.rerun()
+        st.markdown(f"**Créé le**: {orchestra['date_created']}")
+    with col3:
+        status_class = ""
+        if orchestra["status"] == "Actif":
+            status_color = "green"
+        elif orchestra["status"] == "En pause":
+            status_color = "orange"
+        elif orchestra["status"] == "Archivé":
+            status_color = "gray"
         else:
-            st.info("Le code généré apparaîtra ici après la génération.")
-
-    # Logique de génération du code
-    if gen_button and cahier_charges:
-        with st.spinner("Génération du code en cours..."):
-            try:
-                # 1. Charger la base vectorielle
-                vectordb = charger_base_vectorielle()
-                
-                # 2. Rechercher du contexte pertinent
-                contexte, resultats = rechercher_contexte(
-                    cahier_charges, 
-                    vectordb, 
-                    k=k_documents
-                )
-                
-                # Sauvegarder les résultats pour l'affichage
-                st.session_state.context_results = resultats
-                
-                # 3. Préparer le prompt avec le contexte
-                template = PROMPT_TEMPLATES.get(template_type, PROMPT_TEMPLATES["general"])
-                
-                # Ajouter des instructions spécifiques
-                if include_tests:
-                    template += "\nInclus également des tests unitaires pour le code généré."
-                if include_docs:
-                    template += "\nInclus une documentation complète avec des exemples d'utilisation."
-                if include_dependencies:
-                    template += "\nListe toutes les dépendances nécessaires avec leurs versions."
-                
-                # Ajouter des instructions sur le type de projet
-                if project_type == "Flutter":
-                    template += "\nUtilise uniquement Flutter/Dart pour l'implémentation."
-                elif project_type == "Java Android":
-                    template += "\nUtilise uniquement Java pour l'implémentation Android native."
-                
-                prompt = PromptTemplate(
-                    template=template,
-                    input_variables=["contexte", "cahier_charges"]
-                )
-                
-                # 4. Charger le LLM
-                llm = charger_llm(model_name, temperature)
-                
-                # 5. Créer la chaîne
-                chain = LLMChain(llm=llm, prompt=prompt)
-                
-                # 6. Générer le code
-                response = chain.run(
-                    contexte=contexte, 
-                    cahier_charges=cahier_charges
-                )
-                
-                # 7. Sauvegarder le résultat dans la session
-                st.session_state.generated_code = response
-                st.session_state.cahier_charges = cahier_charges
-                st.session_state.project_title = project_title
-                
-                # 8. Recharger la page pour afficher le résultat
-                st.rerun()
-                
-            except Exception as e:
-                st.error(f"Erreur lors de la génération du code: {str(e)}")
-                st.error("Vérifiez que Ollama est bien installé et que le modèle est disponible.")
-
-# Fonction principale
-if __name__ == "__main__":
-    # Initialiser l'historique s'il n'existe pas
-    if "history" not in st.session_state:
-        st.session_state.history = []
+            status_color = "blue"
+        st.markdown(f"**Statut**: <span style='color:{status_color};'>{orchestra['status']}</span>", unsafe_allow_html=True)
     
-    main()
+    st.markdown("---")
+    
+    # Affichage des instruments
+    st.markdown("### 🎻 Instruments")
+    
+    # Création de tabs pour organiser l'affichage
+    tabs = st.tabs(["Instruments", "Projets", "Performance"])
+    
+    with tabs[0]:
+        # Affichage des instruments
+        if len(orchestra['instruments']) > 0:
+            # Calculer le nombre de colonnes en fonction du nombre d'instruments
+            num_cols = min(4, len(orchestra['instruments']))
+            instruments_cols = st.columns(num_cols)
+            
+            for i, instrument in enumerate(orchestra['instruments']):
+                with instruments_cols[i % num_cols]:
+                    st.markdown(f"""
+                    <div style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 15px;">
+                        <h4>{instrument['name']}</h4>
+                        <p style="color: #666;">{instrument['description']}</p>
+                        <button class="btn-secondary">Configurer</button>
+                    </div>
+                    """, unsafe_allow_html=True)
+            
+            # Bouton pour ajouter un instrument
+            st.markdown("""
+            <div style="border: 1px dashed #1E3A8A; border-radius: 8px; padding: 15px; text-align: center; cursor: pointer; margin-top: 15px;">
+                <h4 style="color: #1E3A8A;">+ Ajouter un instrument</h4>
+            </div>
+            """, unsafe_allow_html=True)
+        else:
+            st.info("Aucun instrument n'est associé à cet orchestre.")
+            st.button("+ Ajouter votre premier instrument")
+    
+    with tabs[1]:
+        # Affichage des projets
+        if len(orchestra['projects']) > 0:
+            # Afficher les projets sous forme de cartes
+            for project in orchestra['projects']:
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.markdown(f"### {project['name']}")
+                    st.markdown(f"**Statut**: {project['status']}")
+                    st.progress(project['progress'])
+                with col2:
+                    st.markdown("**Instruments assignés:**")
+                    for instrument in project['assigned_instruments']:
+                        st.markdown(f"- {instrument}")
+                st.markdown("---")
+            
+            # Bouton pour ajouter un projet
+            st.button("+ Ajouter un nouveau projet")
+        else:
+            st.info("Aucun projet n'est associé à cet orchestre.")
+            st.button("+ Créer votre premier projet")
+    
+    with tabs[2]:
+        # Affichage des métriques de performance
+        st.markdown("### Métriques de l'orchestre")
+        
+        # Métriques fictives
+        metric_cols = st.columns(3)
+        with metric_cols[0]:
+            st.metric(label="Projets complétés", value=random.randint(3, 12))
+        with metric_cols[1]:
+            st.metric(label="Taux d'achèvement", value=f"{random.randint(60, 95)}%")
+        with metric_cols[2]:
+            st.metric(label="Temps moyen par projet", value=f"{random.randint(10, 30)} jours")
+        
+        st.markdown("### Activité récente")
+        activity_data = [
+            {"date": "02/03/2025", "event": "Nouveau projet ajouté", "user": "Alice"},
+            {"date": "28/02/2025", "event": "Instrument Développeur configuré", "user": "Bob"},
+            {"date": "25/02/2025", "event": "Projet Refonte terminé", "user": "Charlie"}
+        ]
+        
+        for activity in activity_data:
+            st.markdown(f"**{activity['date']}** - {activity['event']} par {activity['user']}")
+            st.markdown("---")
+
+# Fonction pour afficher la page de création d'orchestre
+def show_create_orchestra():
+    # Bouton de retour explicite
+    back_btn = st.button("← Retour aux orchestres", key="back_btn_create")
+    if back_btn:
+        st.session_state.page = "home"
+        st.rerun()
+    
+    st.title("Créer un nouvel orchestre")
+    
+    # Formulaire de création d'orchestre
+    with st.form("new_orchestra_form"):
+        st.text_input("Nom de l'orchestre", key="new_orchestra_name")
+        selected_type = st.selectbox("Type d'orchestre", 
+                    options=["Développement", "Communication", "Design", "Marketing", "Recherche"],
+                    key="new_orchestra_type")
+        
+        st.text_area("Description", key="new_orchestra_description", 
+                   placeholder="Décrivez l'objectif et la mission de cet orchestre...")
+        
+        # Choix des instruments initiaux
+        st.markdown("### Instruments initiaux")
+        st.markdown("Sélectionnez les instruments à inclure dès la création de l'orchestre")
+        
+        # Affichage dynamique des instruments en fonction du type choisi
+        if selected_type == "Développement":
+            cols = st.columns(4)
+            with cols[0]:
+                dev = st.checkbox("Développeur", value=True)
+                if dev:
+                    st.text_input("Description", value="Code les fonctionnalités", key="dev_desc")
+            with cols[1]:
+                test = st.checkbox("Testeur", value=True)
+                if test:
+                    st.text_input("Description", value="Vérifie la qualité du code", key="test_desc")
+            with cols[2]:
+                manager = st.checkbox("Manageur")
+                if manager:
+                    st.text_input("Description", value="Organise les priorités", key="manager_desc")
+            with cols[3]:
+                architect = st.checkbox("Architecte")
+                if architect:
+                    st.text_input("Description", value="Conçoit la structure technique", key="architect_desc")
+        
+        elif selected_type == "Communication":
+            cols = st.columns(4)
+            with cols[0]:
+                writer = st.checkbox("Rédacteur", value=True)
+                if writer:
+                    st.text_input("Description", value="Crée le contenu écrit", key="writer_desc")
+            with cols[1]:
+                designer = st.checkbox("Designer", value=True)
+                if designer:
+                    st.text_input("Description", value="Conçoit les visuels", key="designer_desc")
+            with cols[2]:
+                cm = st.checkbox("Community Manager")
+                if cm:
+                    st.text_input("Description", value="Gère les réseaux sociaux", key="cm_desc")
+            with cols[3]:
+                strategist = st.checkbox("Stratège")
+                if strategist:
+                    st.text_input("Description", value="Planifie les campagnes", key="strategist_desc")
+        
+        else:
+            st.markdown("Sélectionnez d'abord un type d'orchestre pour voir les instruments disponibles.")
+        
+        # Ajouter un premier projet (optionnel)
+        st.markdown("### Premier projet (optionnel)")
+        col1, col2 = st.columns(2)
+        with col1:
+            st.text_input("Nom du projet", key="first_project_name")
+        with col2:
+            st.selectbox("Statut initial", options=["Planifié", "En cours"], key="first_project_status")
+        
+        st.markdown("---")
+        col1, col2 = st.columns(2)
+        with col1:
+            cancel_btn = st.form_submit_button("Annuler")
+        with col2:
+            create_btn = st.form_submit_button("Créer l'orchestre")
+        
+        if create_btn:
+            st.success("Orchestre créé avec succès!")
+            # Redirection vers la page d'accueil après 2 secondes
+            st.session_state.page = "home"
+            st.rerun()
+        
+        if cancel_btn:
+            st.session_state.page = "home"
+            st.rerun()
+
+# Routage principal en fonction de la page actuelle
+if st.session_state.page == "home":
+    orchestras = show_home_page()
+elif st.session_state.page == "orchestra_detail":
+    show_orchestra_detail(st.session_state.selected_orchestra)
+    orchestras = []  # Pas besoin d'orchestres sur cette page
+elif st.session_state.page == "create_orchestra":
+    show_create_orchestra()
+    orchestras = []  # Pas besoin d'orchestres sur cette page
+else:
+    st.session_state.page = "home"
+    orchestras = show_home_page()
+
+# Barre latérale avec filtres (uniquement sur la page d'accueil)
+if st.session_state.page == "home":
+    st.sidebar.title("Filtres")
+    status_filter = st.sidebar.multiselect(
+        "Statut",
+        options=["Actif", "En pause", "Archivé", "En préparation"],
+        default=["Actif", "En préparation"]
+    )
+
+    type_filter = st.sidebar.multiselect(
+        "Type d'orchestre",
+        options=["Développement", "Communication", "Design", "Marketing", "Recherche"],
+        default=[]
+    )
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### Actions rapides")
+    if st.sidebar.button("Rafraîchir les orchestres"):
+        st.rerun()
+else:
+    # Affichage d'informations contextuelles dans la barre latérale pour les autres pages
+    st.sidebar.title("Rhododendron")
+    st.sidebar.markdown("### Navigation")
+    if st.sidebar.button("Retour à l'accueil"):
+        st.session_state.page = "home"
+        st.session_state.selected_orchestra = None
+        st.rerun()
+    
+    if st.session_state.page == "orchestra_detail":
+        # Informations supplémentaires sur l'orchestre sélectionné
+        st.sidebar.markdown("---")
+        st.sidebar.markdown("### Informations")
+        st.sidebar.markdown(f"**Orchestre**: {st.session_state.selected_orchestra['name']}")
+        st.sidebar.markdown(f"**Type**: {st.session_state.selected_orchestra['type']}")
+        st.sidebar.markdown("### Outils rapides")
+        st.sidebar.button("Exporter les données")
+        st.sidebar.button("Générer un rapport")
+
+# Filtrage des orchestres (seulement sur la page d'accueil)
+if st.session_state.page == "home":
+    filtered_orchestras = orchestras
+    if status_filter:
+        filtered_orchestras = [o for o in filtered_orchestras if o["status"] in status_filter]
+    if type_filter:
+        filtered_orchestras = [o for o in filtered_orchestras if o["type"] in type_filter]
+else:
+    filtered_orchestras = []  # Pas besoin sur les autres pages
+
+# Si nous sommes sur la page d'accueil, afficher le contenu normal
+if st.session_state.page == "home":
+    # Affichage du bouton "Créer un nouvel orchestre"
+    col_btn = st.columns([3, 6, 3])
+    with col_btn[1]:
+        # Bouton explicite pour créer un nouvel orchestre
+        create_btn = st.button("+ Créer un nouvel orchestre", key="create_orchestra_btn")
+        if create_btn:
+            st.session_state.page = "create_orchestra"
+            st.rerun()
+
+    st.markdown("---")
+
+    # Affichage des orchestres en grille
+    st.subheader(f"Vos orchestres ({len(filtered_orchestras)})")
+
+    # Créer 3 colonnes pour afficher les orchestres
+    cols = st.columns(3)
+
+    # Distribuer les orchestres dans les colonnes
+    for i, orchestra in enumerate(filtered_orchestras):
+        with cols[i % 3]:
+            # Définir la classe de statut
+            status_class = ""
+            if orchestra["status"] == "Actif":
+                status_class = "status-active"
+            elif orchestra["status"] == "En pause":
+                status_class = "status-paused"
+            elif orchestra["status"] == "Archivé":
+                status_class = "status-archived"
+            else:
+                status_class = "status-prep"
+            
+            # Contenu de la carte avec un lien cliquable
+            orchestra_id = i  # Utiliser l'index comme ID temporaire
+            
+            # Obtenir le nombre d'instruments et de projets pour affichage
+            num_instruments = len(orchestra["instruments"])
+            num_projects = len(orchestra["projects"])
+            
+            # Créer un conteneur avec style cliquable
+            st.markdown(f"""
+            <div class="orchestra-card" id="orchestra-{orchestra_id}">
+                <div class="orchestra-title">{orchestra["name"]}</div>
+                <div class="orchestra-type">Type: {orchestra["type"]}</div>
+                <div class="orchestra-date">Créé le: {orchestra["date_created"]}</div>
+                <span class="status-tag {status_class}">{orchestra["status"]}</span>
+                <hr>
+                <div style="margin-top: 10px; display: flex; justify-content: space-between;">
+                    <div><strong>{num_instruments}</strong> instruments</div>
+                    <div><strong>{num_projects}</strong> projets</div>
+                </div>
+                <div style="margin-top: 10px;">
+                    {''.join([f'<span class="instrument-tag">{instrument["name"]}</span>' for instrument in orchestra["instruments"][:2]])}
+                    {f'<span class="instrument-tag">+{num_instruments - 2} autres</span>' if num_instruments > 2 else ''}
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Bouton explicite pour cliquer sur l'orchestre - ce sera visible et fonctionnel
+            if st.button(f"Voir les détails de {orchestra['name']}", key=f"btn_orchestra_{orchestra_id}"):
+                st.session_state.selected_orchestra = orchestra
+                st.session_state.page = "orchestra_detail"
+                st.rerun()
+
+# Afficher la suite uniquement sur la page d'accueil
+if st.session_state.page == "home":
+    # Afficher un message si aucun orchestre ne correspond aux filtres
+    if not filtered_orchestras:
+        st.info("Aucun orchestre ne correspond aux critères de filtre sélectionnés.")
+
+    # Afficher la pagination (fictive pour le moment)
+    if len(filtered_orchestras) > 0:
+        st.markdown("---")
+        cols_paginate = st.columns([4, 1, 1, 1, 1, 4])
+        with cols_paginate[1]:
+            st.markdown('<div style="text-align: center;">1</div>', unsafe_allow_html=True)
+        with cols_paginate[2]:
+            st.markdown('<div style="text-align: center; color: #888;">2</div>', unsafe_allow_html=True)
+        with cols_paginate[3]:
+            st.markdown('<div style="text-align: center; color: #888;">3</div>', unsafe_allow_html=True)
+        with cols_paginate[4]:
+            st.markdown('<div style="text-align: center; color: #888;">→</div>', unsafe_allow_html=True)
