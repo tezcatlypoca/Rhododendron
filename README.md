@@ -70,6 +70,16 @@ ollama pull codellama:7b-instruct-q4_0
 ```
 
 
+### Installation du model Ollama
+
+- Se rendre sur [Ollama](https://ollama.ai/)
+- Télécharger Ollama, puis run la commande suivante:
+  
+```bash
+ollama pull codellama:7b-instruct-q4_0
+```
+
+
 ## 📦 Technologies
 
 - **Modèles**: [Llama 3](https://ai.meta.com/llama/), [CodeLlama](https://github.com/facebookresearch/codellama), [Mistral](https://mistral.ai/)
@@ -101,3 +111,4 @@ Ce projet est sous licence [MIT](LICENSE).
 - [Documentation LangChain](https://python.langchain.com/en/latest/)
 - [Guide de quantification des modèles](https://huggingface.co/docs/transformers/main/en/quantization)
 - [Tutoriel CrewAI](https://www.crewai.io/docs/tutorials/getting-started)
+
