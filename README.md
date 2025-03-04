@@ -3,6 +3,7 @@
 Un système d'agents AI collaboratifs exécutés entièrement en local pour le développement de petits projets logiciels.
 
 📂 [Voir la structure du projet](docs/Architecture%20dossier%20du%20projet.md)
+[Comprendre les notions associées aux IA](docs/Comprendre%20les%20notions%20associées%20aux%20IA.md)
 
 ## 🔍 Vue d'ensemble
 
