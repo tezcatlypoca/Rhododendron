@@ -2,7 +2,8 @@
 
 Un système d'agents AI collaboratifs exécutés entièrement en local pour le développement de petits projets logiciels.
 
-![Architecture du projet](./architecture.svg)
+📂 [Voir la structure du projet](docs/Architecture%20dossier%20du%20projet.md)
+📂 [Comprendre les notions associées aux IA](docs/Comprendre%20les%20notions%20associées%20aux%20IA.md)
 
 ## 🔍 Vue d'ensemble
 
@@ -58,6 +59,16 @@ pip install -r requirements.txt
 # Lancer le dashboard
 streamlit run app.py
 ```
+
+### Installation du model Ollama
+
+- Se rendre sur [Ollama](https://ollama.ai/)
+- Télécharger Ollama, puis run la commande suivante:
+  
+```bash
+ollama pull codellama:7b-instruct-q4_0
+```
+
 
 ## 📦 Technologies
 
