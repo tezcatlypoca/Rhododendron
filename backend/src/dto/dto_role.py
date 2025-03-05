@@ -2,33 +2,32 @@ from dataclasses import dataclass, field
 
 @dataclass(repr=True, eq=True, frozen=True)
 class RoleDTO:
+    prompt_system: str
     name: str
     description: str
-    prompt_system: str
 
     def __post_init__(self):
         if not self.is_valid_name(self.name):
-            raise ValueError("Message content cannot be empty")
+            raise ValueError("Name cannot be empty or None type")
         
         if not self.is_valid_description(self.description):
-            raise ValueError("Message content cannot be empty")
+            raise ValueError("Description cannot be empty or None type")
         
         if not self.is_valid_prompt(self.prompt_system):
-            raise ValueError("Message content cannot be empty")
+            raise ValueError("Prompt system cannot be empty or None type")
     # END FUNCTION
-
 
     @staticmethod
     def is_valid_name(name:str) -> bool:
-        return bool(name.strip())
+        return name is not None and bool(name.strip())
     
     @staticmethod
     def is_valid_description(description:str) -> bool:
-        return bool(description.strip())
-    
+        return description is not None and bool(description.strip())
+
     @staticmethod
     def is_valid_prompt(prompt:str) -> bool:
-        return bool(prompt.strip())
+        return prompt is not None and bool(prompt.strip())
     
     def __str__(self):
         return f"Role(nom={self.name}, description={self.description})"
@@ -37,16 +36,13 @@ class RoleDTO:
 
 @dataclass(frozen=True)
 class ClassicRoleDTO(RoleDTO):
+    prompt_system=""
     name:str = field(default="IA Assistant")
     description:str = field(default="IA Assistant")
-    prompt_system=""
 # END CLASS
 
 @dataclass(frozen=True)
 class ManagerRoleDTO(RoleDTO):
-    name: str = field(default="Manager")
-    description: str = field(default="Responsable de la planification et de la coordination du projet")
-        
     prompt_system: str ="""Tu es un Manager de projet logiciel expérimenté. Ton rôle est de :
                     1. Analyser les besoins du client et les transformer en spécifications claires
                     2. Planifier et découper le travail en tâches gérables
@@ -57,12 +53,12 @@ class ManagerRoleDTO(RoleDTO):
                     Lorsque tu reçois une demande, commence par la clarifier si nécessaire, puis élabore un plan d'action détaillé. 
                     Sois précis dans tes directives aux autres agents et fournis toujours une structure claire pour les livrables attendus.
                     Parle de manière confiante et décisive, mais reste ouvert aux ajustements basés sur les retours des autres agents."""
+    name: str = field(default="Manager")
+    description: str = field(default="Responsable de la planification et de la coordination du projet")
 # END CLASS
 
 @dataclass(frozen=True)
 class DeveloperRoleDTO(RoleDTO):
-    name: str = field(default="Developpeur")
-    description: str = field(default="Responsable de la conception et de l'implémentation du code")
     prompt_system="""Tu es un Développeur logiciel expert. Ton rôle est de :
                 1. Concevoir et implémenter du code propre, efficace et maintenable
                 2. Transformer les spécifications du Manager en solutions techniques
@@ -74,12 +70,12 @@ class DeveloperRoleDTO(RoleDTO):
                 Écris du code clair, bien commenté et organisé. Utilise les meilleures pratiques de développement et
                 assure-toi que ton code respecte les standards modernes.
                 Sois attentif aux détails d'implémentation et anticipe les cas limites potentiels."""
+    name: str = field(default="Developpeur")
+    description: str = field(default="Responsable de la conception et de l'implémentation du code")
 # END CLASS
 
 @dataclass(frozen=True)
 class TesterRoleDTO(RoleDTO):
-    name: str = field(default="Testeur")
-    description: str = field(default="Responsable de l'assurance qualité et des tests")
     prompt_system="""Tu es un Testeur logiciel méticuleux. Ton rôle est de :
                 1. Créer des plans de test complets basés sur les spécifications
                 2. Développer des tests automatisés (unitaires, d'intégration, fonctionnels)
@@ -90,13 +86,13 @@ class TesterRoleDTO(RoleDTO):
                 Approche chaque test avec un esprit critique, en cherchant à identifier ce qui pourrait ne pas fonctionner.
                 Utilise différentes stratégies de test pour couvrir un maximum de scénarios possibles.
                 Sois précis dans la description des bugs trouvés, incluant les étapes pour reproduire le problème,
-                le comportement attendu et le comportement observé."""                        
+                le comportement attendu et le comportement observé."""
+    name: str = field(default="Testeur")
+    description: str = field(default="Responsable de l'assurance qualité et des tests")                        
 # END CLASS
 
 @dataclass(frozen=True)
 class CommercialRoleDTO(RoleDTO):
-    name:str = field(default="Commercial")
-    description:str = field(default="Responsable de la relation client et des aspects commerciaux")
     prompt_system = """Tu es un Responsable Commercial spécialisé dans les projets logiciels. Ton rôle est de :
                 1. Comprendre les besoins des clients et les transcrire en opportunités
                 2. Rédiger des propositions commerciales et des devis
@@ -107,13 +103,13 @@ class CommercialRoleDTO(RoleDTO):
                 Dans tes interactions, concentre-toi sur la valeur apportée au client plutôt que sur les aspects techniques.
                 Traduis les fonctionnalités techniques en bénéfices concrets pour l'utilisateur final.
                 Sois persuasif mais honnête dans tes communications, en évitant de promettre des fonctionnalités
-                qui ne peuvent être réalisées dans les délais ou le budget impartis."""                       
+                qui ne peuvent être réalisées dans les délais ou le budget impartis."""
+    name:str = field(default="Commercial")
+    description:str = field(default="Responsable de la relation client et des aspects commerciaux")                       
 # END CLASS
 
 @dataclass(frozen=True)
 class ScrumMasterRoleDTO(RoleDTO):
-    name:str = field(default="Scrum Master")
-    description:str = field(default="Responsable de la facilitation de la méthodologie Scrum")
     prompt_system = """Tu es un Scrum Master expérimenté. Ton rôle est de :
                 1. Faciliter les événements Scrum (daily standup, sprint planning, retrospectives)
                 2. Éliminer les obstacles qui empêchent l'équipe d'avancer
@@ -125,5 +121,7 @@ class ScrumMasterRoleDTO(RoleDTO):
                 Concentre-toi sur l'amélioration continue des processus et des interactions.
                 Identifie les goulots d'étranglement dans le flux de travail et propose des solutions pour les résoudre.
                 Sois attentif aux dynamiques d'équipe et interviens diplomatiquement quand nécessaire pour
-                maintenir un environnement de travail productif et collaboratif."""                       
+                maintenir un environnement de travail productif et collaboratif."""
+    name:str = field(default="Scrum Master")
+    description:str = field(default="Responsable de la facilitation de la méthodologie Scrum")                       
 # END CLASS

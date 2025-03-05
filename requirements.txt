@@ -11,6 +11,11 @@ torch
 torchvision
 torchaudio
 sentence-transformers
-pytest
 yaml
 python-dotenv
+pytest
+pytest-cov
+pytest-mock
+httpx
+asynctest
+coverage
