@@ -7,6 +7,47 @@
 - Il traite des séquences de texte avec des **opérations massivement parallélisables** sur GPU, notamment pour la **génération de texte** et les **applications NLP (Natural Language Processing)**.  
 
 ## 2. **Calculs GPU : FLOPS, TOPS et précision numérique**
+# Calcul des FLOPS en fonction du modèle
+
+## 1. Dépendances de l'estimation des FLOPS
+L'estimation des FLOPS dépend :
+
+- Du nombre de paramètres du modèle (pondérations à multiplier par les entrées)
+- Du nombre d'opérations effectuées à chaque passage (inférence ou entraînement)
+- Du type d'opérations (multiplications matricielles, convolutions...)
+
+## 2. FLOPS pour différents types de modèles
+
+### a) Réseau dense (MLP, Transformer)
+Un réseau de neurones dense effectue principalement des multiplications de matrices :
+
+\[ FLOPS = 2 \times ( \text{Taille de l'entrée} \times \text{Taille de la sortie} ) \]
+
+Si un modèle a **N paramètres**, il faut environ **2N FLOPS** pour un passage avant (inférence).
+
+**Exemple :**
+- Un modèle avec **1 milliard de paramètres (~1B)**
+- En **FP16** (2 octets par paramètre)
+- **Besoin en FLOPS** ≈ **2 × 1B = 2 TFLOPS** par passage avant
+
+### b) Réseau convolutif (CNN)
+Les convolutions sont plus complexes, mais une approximation donne :
+
+\[ FLOPS = 2 \times ( \text{Nombre de filtres} \times \text{Taille des filtres} \times \text{Taille des entrées} ) \]
+
+Les **CNN modernes** nécessitent souvent **plusieurs centaines de GFLOPS à plusieurs TFLOPS**.
+
+### c) Modèle Transformer (ex: GPT, BERT)
+Les Transformers sont très gourmands à cause des multiplications matricielles dans l'Attention. Le besoin en FLOPS est approximé par :
+
+\[ FLOPS = 2 \times (N^2 \times d) \]
+
+où :
+- **N** = nombre de tokens en entrée
+- **d** = taille des embeddings
+
+**Exemple :** GPT-3 (~175B paramètres) nécessite **plusieurs pétaFLOPS** pour tourner en temps réel.
+
 - Les **GPU** sont composés de plusieurs types de **cœurs** :
   - **Cœurs CUDA** : Utilisés pour les calculs génériques en **FP32** (précision simple).
   - **Cœurs Tensor** : Spécialisés dans les calculs en **FP16, BF16, INT8, INT4** (précisions plus basses, mais très rapides).
