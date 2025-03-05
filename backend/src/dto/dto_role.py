@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 @dataclass(repr=True, eq=True, frozen=True)
-class Role:
+class RoleDTO:
     name: str
     description: str
     prompt_system: str
@@ -36,14 +36,14 @@ class Role:
 
 
 @dataclass(frozen=True)
-class ClassicRole(Role):
+class ClassicRoleDTO(RoleDTO):
     name:str = field(default="IA Assistant")
     description:str = field(default="IA Assistant")
     prompt_system=""
 # END CLASS
 
 @dataclass(frozen=True)
-class ManagerRole(Role):
+class ManagerRoleDTO(RoleDTO):
     name: str = field(default="Manager")
     description: str = field(default="Responsable de la planification et de la coordination du projet")
         
@@ -60,7 +60,7 @@ class ManagerRole(Role):
 # END CLASS
 
 @dataclass(frozen=True)
-class DeveloperRole(Role):
+class DeveloperRoleDTO(RoleDTO):
     name: str = field(default="Developpeur")
     description: str = field(default="Responsable de la conception et de l'implémentation du code")
     prompt_system="""Tu es un Développeur logiciel expert. Ton rôle est de :
@@ -77,7 +77,7 @@ class DeveloperRole(Role):
 # END CLASS
 
 @dataclass(frozen=True)
-class TesterRole(Role):
+class TesterRoleDTO(RoleDTO):
     name: str = field(default="Testeur")
     description: str = field(default="Responsable de l'assurance qualité et des tests")
     prompt_system="""Tu es un Testeur logiciel méticuleux. Ton rôle est de :
@@ -94,7 +94,7 @@ class TesterRole(Role):
 # END CLASS
 
 @dataclass(frozen=True)
-class CommercialRole(Role):
+class CommercialRoleDTO(RoleDTO):
     name:str = field(default="Commercial")
     description:str = field(default="Responsable de la relation client et des aspects commerciaux")
     prompt_system = """Tu es un Responsable Commercial spécialisé dans les projets logiciels. Ton rôle est de :
@@ -111,7 +111,7 @@ class CommercialRole(Role):
 # END CLASS
 
 @dataclass(frozen=True)
-class ScrumMasterRole(Role):
+class ScrumMasterRoleDTO(RoleDTO):
     name:str = field(default="Scrum Master")
     description:str = field(default="Responsable de la facilitation de la méthodologie Scrum")
     prompt_system = """Tu es un Scrum Master expérimenté. Ton rôle est de :

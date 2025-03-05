@@ -1,8 +1,8 @@
 from dataclasses import dataclasses
 from src.agents.Agent import Agent
 
-@dataclasses
-class ProjetDTO(repr=True, eq=True):
+@dataclasses(repr=True, eq=True)
+class ProjetDTO:
     _id: str
     name: str
     description: str

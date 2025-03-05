@@ -23,7 +23,7 @@ class Agent:
             system_prompt: Prompt système qui définit le comportement de l'agent
             api_url: URL de l'API Ollama
     """
-    def __init__(self, name: str, role: Role, model_name: str, temperature: float = 0.7):
+    def __init__(self, name: str, role: RoleDTO, model_name: str, temperature: float = 0.7):
         self.name = name
         self.role = role
         self.model_name = model_name

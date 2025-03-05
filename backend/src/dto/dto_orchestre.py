@@ -4,8 +4,8 @@ from dto_projet import Projet
 from dto_role import *
 from src.settings import MODEL_NAME
 
-@dataclass
-class OrchestreDTO(repr=True, eq=True):
+@dataclass(repr=True, eq=True)
+class OrchestreDTO:
     _id: str
     name: str
     template: str
@@ -18,28 +18,28 @@ class OrchestreDTO(repr=True, eq=True):
 
 
 @dataclass
-class OrchestreClassique(Orchestre):
+class OrchestreClassique(OrchestreDTO):
     def __init__(self):
         super.__init__(
             name = 'Classique Orchestre',
             template = 'classic',
             description = 'Orchestre paramétré avec un agent généraliste. Prêts à échanger sur n\'importe quels sujets',
-            instruments = [Agent('IA classique', ClassicRole(), MODEL_NAME)],
+            instruments = [Agent('IA classique', ClassicRoleDTO(), MODEL_NAME)],
             projets = []
         )
 # END CLASS
 
 @dataclass
-class OrchestreDeveloppement(Orchestre):
+class OrchestreDeveloppement(OrchestreDTO):
     def __init__(self):
         super.__init__(
             name = 'Orchestre Developpement',
             template = 'Developpement',
             description = 'Orchestre paramétré avec une équipe d\'agents spécialisés en développement.\nAgents affiliés: Manager, Developer, Tester',
             instruments = [
-                        Agent('Manager', ManagerRole(), MODEL_NAME),
-                        Agent('Developpeur', DeveloperRole(), MODEL_NAME),
-                        Agent('Testeur', TesterRole(), MODEL_NAME)
+                        Agent('Manager', ManagerRoleDTO(), MODEL_NAME),
+                        Agent('Developpeur', DeveloperRoleDTO(), MODEL_NAME),
+                        Agent('Testeur', TesterRoleDTO(), MODEL_NAME)
                            ],
             projets = []
         )
