@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from dto_role import RoleDTO
+from .dto_role import RoleDTO
 
 @dataclass(repr=True, eq=True, frozen=True)
 class agentDTO:
@@ -9,8 +9,14 @@ class agentDTO:
     temperature: float
 
     def __post_init__(self):
+        if not self.name_is_not_none(self.name):
+            raise ValueError("Name cannot be None type")
+        
         if not self.is_valid_name(self.name):
             raise ValueError("Name cannot be empty")
+        
+        if not self.model_name_is_not_none(self.model_name):
+            raise ValueError("Model name cannot be None type")
         
         if not self.is_valid_model_name(self.model_name):
             raise ValueError("Model name cannot be empty")
@@ -27,13 +33,26 @@ class agentDTO:
         return bool(model_name.strip())
     
     @staticmethod
+    def model_name_is_not_none(model_name: str) -> bool:
+        return model_name is not None
+    
+    @staticmethod
     def is_valid_name(name: str) -> bool:
         return bool(name.strip())
+    
+    @staticmethod
+    def name_is_not_none(name: str) -> bool:
+        return name is not None
+    
+    @staticmethod
+    def is_valid_role(role: RoleDTO) -> bool:
+        return role is not None
     
     @staticmethod
     def is_valid_temperature(temperature: float) -> bool:
         return (temperature is not None) 
     
+    @staticmethod
     def is_float(temperature: float) -> float:
         return isinstance(temperature, float)
 # END FUNCTION
