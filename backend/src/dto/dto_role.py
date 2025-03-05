@@ -8,27 +8,26 @@ class RoleDTO:
 
     def __post_init__(self):
         if not self.is_valid_name(self.name):
-            raise ValueError("Message content cannot be empty")
+            raise ValueError("Name cannot be empty or None type")
         
         if not self.is_valid_description(self.description):
-            raise ValueError("Message content cannot be empty")
+            raise ValueError("Description cannot be empty or None type")
         
         if not self.is_valid_prompt(self.prompt_system):
-            raise ValueError("Message content cannot be empty")
+            raise ValueError("Prompt system cannot be empty or None type")
     # END FUNCTION
-
 
     @staticmethod
     def is_valid_name(name:str) -> bool:
-        return bool(name.strip())
+        return name is not None and bool(name.strip())
     
     @staticmethod
     def is_valid_description(description:str) -> bool:
-        return bool(description.strip())
-    
+        return description is not None and bool(description.strip())
+
     @staticmethod
     def is_valid_prompt(prompt:str) -> bool:
-        return bool(prompt.strip())
+        return prompt is not None and bool(prompt.strip())
     
     def __str__(self):
         return f"Role(nom={self.name}, description={self.description})"

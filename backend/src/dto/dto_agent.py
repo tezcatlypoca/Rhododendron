@@ -8,21 +8,15 @@ class agentDTO:
     model_name: str
     temperature: float
 
-    def __post_init__(self):
-        if not self.name_is_not_none(self.name):
-            raise ValueError("Name cannot be None type")
-        
+    def __post_init__(self):        
         if not self.is_valid_name(self.name):
-            raise ValueError("Name cannot be empty")
-        
-        if not self.model_name_is_not_none(self.model_name):
-            raise ValueError("Model name cannot be None type")
+            raise ValueError("Name cannot be empty or None type")
         
         if not self.is_valid_model_name(self.model_name):
-            raise ValueError("Model name cannot be empty")
+            raise ValueError("Model name cannot be empty or None type")
         
         if not self.is_valid_temperature(self.temperature):
-            raise ValueError("Temprature cannot be empty")
+            raise ValueError("Temprature cannot be empty or None type")
         
         if not self.is_float(self.temperature):
             raise ValueError("Temprature has to be float type")
@@ -30,19 +24,11 @@ class agentDTO:
 
     @staticmethod
     def is_valid_model_name(model_name: str) -> bool:
-        return bool(model_name.strip())
-    
-    @staticmethod
-    def model_name_is_not_none(model_name: str) -> bool:
-        return model_name is not None
+        return model_name is not None and bool(model_name.strip())
     
     @staticmethod
     def is_valid_name(name: str) -> bool:
-        return bool(name.strip())
-    
-    @staticmethod
-    def name_is_not_none(name: str) -> bool:
-        return name is not None
+        return name is not None and bool(name.strip())
     
     @staticmethod
     def is_valid_role(role: RoleDTO) -> bool:
