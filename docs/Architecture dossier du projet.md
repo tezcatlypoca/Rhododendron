@@ -3,13 +3,12 @@
 ```plaintext
 CrewAI-Locale/
 │── backend/                # Backend en Python (FastAPI, CrewAI, LangChain)
-│   ├── app/
+│   ├── src/
 │   │   ├── api/            # Routes FastAPI
-│   │   ├── models/         # Définitions des modèles de données
+│   │   ├── dto/         # Définitions des modèles de données
 │   │   ├── services/       # Logique métier (agents AI, orchestration)
 │   │   ├── core/           # Configuration et utils
 │   │   ├── main.py         # Point d'entrée FastAPI
-│   ├── agents/             # Code spécifique aux agents AI
 │   ├── requirements.txt    # Dépendances Python
 │   ├── Dockerfile          # Conteneurisation du backend
 │   ├── tests/              # Tests unitaires pour le backend

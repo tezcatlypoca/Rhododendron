@@ -7,6 +7,7 @@
 - Il traite des séquences de texte avec des **opérations massivement parallélisables** sur GPU, notamment pour la **génération de texte** et les **applications NLP (Natural Language Processing)**.  
 
 ## 2. **Calculs GPU : FLOPS, TOPS et précision numérique**
+<<<<<<< HEAD
 # Calcul des FLOPS en fonction du modèle
 
 ## 1. Dépendances de l'estimation des FLOPS
@@ -48,6 +49,8 @@ où :
 
 **Exemple :** GPT-3 (~175B paramètres) nécessite **plusieurs pétaFLOPS** pour tourner en temps réel.
 
+=======
+>>>>>>> f1c8f81899539c0bc0e8d4ecc783ae7e70a01671
 - Les **GPU** sont composés de plusieurs types de **cœurs** :
   - **Cœurs CUDA** : Utilisés pour les calculs génériques en **FP32** (précision simple).
   - **Cœurs Tensor** : Spécialisés dans les calculs en **FP16, BF16, INT8, INT4** (précisions plus basses, mais très rapides).
