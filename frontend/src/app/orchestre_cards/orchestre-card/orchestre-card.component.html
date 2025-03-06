@@ -1,0 +1,53 @@
+<div class="orchestre-card">
+  <div class="orchestre-header" [ngClass]="{
+      'dev': orchestre?.specialite === 'Développement', 
+      'com': orchestre?.specialite === 'Communication',
+      'data': orchestre?.specialite === 'Analyse'
+    }">
+    <div class="header-content">
+      <h2>{{ orchestre?.nom }}</h2>
+      <span class="specialite-badge">{{ orchestre?.specialite }}</span>
+    </div>
+    <div class="orchestre-icon">
+      <i class="fas" [ngClass]="{
+          'fa-code': orchestre?.specialite === 'Développement', 
+          'fa-bullhorn': orchestre?.specialite === 'Communication',
+          'fa-chart-pie': orchestre?.specialite === 'Analyse'
+        }"></i>
+    </div>
+  </div>
+  <div class="orchestre-content">
+    <div class="date-creation">
+      <i class="far fa-calendar-alt"></i> Créé le {{ orchestre?.dateCreation | date:'dd/MM/yyyy' }}
+    </div>
+    <div class="orchestre-meta">
+      <div class="meta-item">
+        <i class="fas fa-users"></i>
+        <span>{{ orchestre?.instruments?.length || 0 }} instruments</span>
+      </div>
+      <div class="meta-item">
+        <i class="fas fa-folder-open"></i>
+        <span>{{ getProjectsCount() }} projets</span>
+      </div>
+    </div>
+    <div class="instruments-preview">
+      <h3><i class="fas fa-music"></i> Instruments</h3>
+      <div class="instruments-chips">
+        <span class="instrument-chip" *ngFor="let instrument of getPreviewInstruments()">
+          {{ instrument?.nom }}
+        </span>
+        <span class="more-chip" *ngIf="hasMoreInstruments()">
+          +{{ getMoreInstrumentsCount() }}
+        </span>
+      </div>
+    </div>
+  </div>
+  <div class="orchestre-footer">
+    <button class="btn-ouvrir" (click)="onOuvrirClick()">
+      <i class="fas fa-door-open"></i> Ouvrir
+    </button>
+    <button class="btn-configurer" (click)="onConfigurerClick()">
+      <i class="fas fa-cog"></i>
+    </button>
+  </div>
+</div>

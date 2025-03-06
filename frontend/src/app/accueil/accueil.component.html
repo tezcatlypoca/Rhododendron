@@ -1,0 +1,30 @@
+<div *ngIf="isLoading" class="loading-container">
+  <div class="spinner"></div>
+  <p>Chargement des orchestres...</p>
+</div>
+
+<div *ngIf="error" class="error-container">
+  <p>{{ error }}</p>
+  <button (click)="ngOnInit()">Réessayer</button>
+</div>
+
+<ng-container *ngIf="!isLoading && !error">
+  <app-orchestre-galerie 
+    *ngIf="orchestres.length > 0"
+    [orchestres]="orchestres" 
+    (ouvrirOrchestre)="handleOuvrirOrchestre($event)"
+    (configurerOrchestre)="handleConfigurerOrchestre($event)"
+    (creerOrchestre)="creerNouvelOrchestre()">
+  </app-orchestre-galerie>
+  
+  <div class="empty-state" *ngIf="orchestres.length === 0">
+    <div class="empty-icon">
+      <i class="fas fa-music"></i>
+    </div>
+    <h2>Aucun orchestre disponible</h2>
+    <p>Vous n'avez pas encore d'orchestres. Créez votre premier orchestre pour commencer à orchestrer vos agents d'IA.</p>
+    <button class="btn-create" (click)="creerNouvelOrchestre()">
+      <i class="fas fa-plus-circle"></i> Créer mon premier orchestre
+    </button>
+  </div>
+</ng-container>

@@ -3,6 +3,7 @@ rhodoenv/
 .env
 *.pyc
 __pycache__/
+frontend/node_modules/
 
 # Dépendances et fichiers générés
 *.log
@@ -31,3 +32,5 @@ secrets.json
 # Autres
 *.ini
 README.txt
+.vscode
+.angular

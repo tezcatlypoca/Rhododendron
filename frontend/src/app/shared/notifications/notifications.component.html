@@ -1,0 +1,19 @@
+<!-- src/app/shared/notifications/notifications.component.html -->
+<div class="notifications-container">
+  <div class="notification" 
+       *ngFor="let notification of notifications"
+       [ngClass]="notification.type">
+    <div class="notification-header">
+      <div class="notification-icon">
+        <i class="fas" [ngClass]="getIconClass(notification.type)"></i>
+      </div>
+      <div class="notification-message">{{ notification.message }}</div>
+      <button class="notification-close" (click)="closeNotification(notification)">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="notification-details" *ngIf="notification.details">
+      {{ notification.details }}
+    </div>
+  </div>
+</div>

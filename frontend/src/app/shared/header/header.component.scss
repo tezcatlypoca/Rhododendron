@@ -1,0 +1,246 @@
+// src/app/shared/header/header.component.scss
+.app-header {
+  background-color: white;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  height: 64px;
+  display: flex;
+  align-items: center;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 100%;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #2196F3;
+  text-decoration: none;
+  margin-right: 2rem;
+}
+
+.main-nav {
+  display: flex;
+  gap: 1.5rem;
+  
+  a {
+    color: #555;
+    text-decoration: none;
+    padding: 0.5rem 0;
+    font-weight: 500;
+    position: relative;
+    transition: color 0.2s;
+    
+    &:hover {
+      color: #2196F3;
+    }
+    
+    &.active {
+      color: #2196F3;
+      
+      &:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: #2196F3;
+        border-radius: 2px;
+      }
+    }
+  }
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 30px;
+  transition: background-color 0.2s;
+  position: relative;
+  
+  &:hover {
+    background-color: #f5f5f5;
+  }
+}
+
+.user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-size: cover;
+  background-position: center;
+  background-color: #e0e0e0;
+  
+  &.large {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+.user-name {
+  font-weight: 500;
+  color: #333;
+}
+
+.user-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 300px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: opacity 0.2s, transform 0.2s, visibility 0.2s;
+  
+  &.open {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  
+  .user-info {
+    padding: 1.5rem;
+    display: flex;
+    gap: 1rem;
+    border-bottom: 1px solid #eee;
+    
+    .user-details {
+      flex: 1;
+      
+      .user-fullname {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.25rem;
+      }
+      
+      .user-email {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 0.25rem;
+      }
+      
+      .user-role {
+        font-size: 0.85rem;
+        color: #888;
+        text-transform: capitalize;
+      }
+    }
+  }
+  
+  .menu-items {
+    padding: 0.5rem 0;
+    
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      color: #555;
+      text-decoration: none;
+      transition: background-color 0.2s;
+      font-size: 0.95rem;
+      
+      i {
+        color: #777;
+        font-size: 1rem;
+        width: 20px;
+        text-align: center;
+      }
+      
+      &:hover {
+        background-color: #f8f9fa;
+      }
+      
+      &.logout {
+        color: #e74c3c;
+        border: none;
+        background: none;
+        width: 100%;
+        text-align: left;
+        cursor: pointer;
+        font-family: inherit;
+        
+        i {
+          color: #e74c3c;
+        }
+        
+        &:hover {
+          background-color: #fff5f5;
+        }
+      }
+    }
+  }
+}
+
+.login-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #2196F3;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #0d6efd;
+  }
+}
+
+.menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .main-nav {
+    display: none;
+  }
+  
+  .user-name {
+    display: none;
+  }
+  
+  .user-profile i {
+    display: none;
+  }
+}

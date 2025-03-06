@@ -1,0 +1,64 @@
+<!-- src/app/auth/login/login.component.html -->
+<div class="login-container">
+  <div class="login-card">
+    <div class="login-header">
+      <h1>CrewAI-Locale</h1>
+      <p>Connectez-vous pour accéder à vos orchestres</p>
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input 
+          type="email" 
+          id="email" 
+          formControlName="email" 
+          placeholder="Entrez votre email"
+          [ngClass]="{'is-invalid': f['email'].touched && f['email'].invalid}"
+        >
+        <div class="error-message" *ngIf="f['email'].touched && f['email'].invalid">
+          <span *ngIf="f['email'].errors?.['required']">L'email est requis</span>
+          <span *ngIf="f['email'].errors?.['email']">Veuillez entrer un email valide</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Mot de passe</label>
+        <input 
+          type="password" 
+          id="password" 
+          formControlName="password" 
+          placeholder="Entrez votre mot de passe"
+          [ngClass]="{'is-invalid': f['password'].touched && f['password'].invalid}"
+        >
+        <div class="error-message" *ngIf="f['password'].touched && f['password'].invalid">
+          <span *ngIf="f['password'].errors?.['required']">Le mot de passe est requis</span>
+        </div>
+      </div>
+
+      <div class="form-group-checkbox">
+        <input type="checkbox" id="rememberMe" formControlName="rememberMe">
+        <label for="rememberMe">Se souvenir de moi</label>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-login" [disabled]="loginForm.invalid || loading">
+          <i class="fas" [ngClass]="loading ? 'fa-spinner fa-spin' : 'fa-sign-in-alt'"></i>
+          Se connecter
+        </button>
+      </div>
+    </form>
+    
+    <!-- Note informative avec les identifiants, sans fonctionnalité de pré-remplissage -->
+    <!-- Note informative avec les identifiants, sans fonctionnalité de pré-remplissage -->
+  <div class="login-info">
+    <p>Informations de connexion pour les tests :</p>
+    <ul>
+      <li><strong>Admin (Test Utilisateur)</strong>: testeur&#64;example.com / password123</li>
+      <li><strong>Utilisateur (Valentin)</strong>: vcoutry&#64;gmail.com / password123</li>
+      <li><strong>Utilisateur (Samuel)</strong>: user2&#64;example.com / password123</li>
+      <li><strong>Utilisateur (Yoann)</strong>: user3&#64;example.com / password123</li>
+    </ul>
+  </div>
+  </div>
+</div>
