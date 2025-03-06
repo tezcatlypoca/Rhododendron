@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from src.agents.Agent import Agent
+from src.services.Agent import Agent
 from dto_message import MessageDTO
 from datetime import date
 

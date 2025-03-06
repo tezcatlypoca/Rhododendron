@@ -1,5 +1,5 @@
 from dataclasses import dataclasses
-from src.agents.Agent import Agent
+from src.services.Agent import Agent
 
 @dataclasses(repr=True, eq=True)
 class ProjetDTO:

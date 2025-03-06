@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from src.agents.Agent import Agent
+from src.services.Agent import Agent
 from dto_projet import Projet
 from dto_role import *
 from src.settings import MODEL_NAME
