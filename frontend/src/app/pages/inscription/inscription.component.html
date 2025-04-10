@@ -1,0 +1,49 @@
+<!-- src/app/pages/inscription/inscription.component.html -->
+<div class="conteneur-inscription">
+    <div class="carte-inscription">
+      <h1 class="titre">Inscription</h1>
+      
+      <form [formGroup]="formulaireInscription" (ngSubmit)="onSubmit()">
+        <div *ngIf="erreurMessage" class="alerte-erreur">
+          {{ erreurMessage }}
+        </div>
+        
+        <app-champ-formulaire
+          label="Nom d'utilisateur"
+          type="text"
+          placeholder="Choisissez un nom d'utilisateur"
+          [control]="formulaireInscription.get('username')!"
+          [erreurMessages]="messagesErreur.username"
+        ></app-champ-formulaire>
+        
+        <app-champ-formulaire
+          label="Email"
+          type="email"
+          placeholder="Entrez votre adresse email"
+          [control]="formulaireInscription.get('email')!"
+          [erreurMessages]="messagesErreur.email"
+        ></app-champ-formulaire>
+        
+        <app-champ-formulaire
+          label="Mot de passe"
+          type="password"
+          placeholder="Créez un mot de passe (8 caractères minimum)"
+          [control]="formulaireInscription.get('password')!"
+          [erreurMessages]="messagesErreur.password"
+        ></app-champ-formulaire>
+        
+        <div class="actions">
+          <app-bouton
+            texte="S'inscrire"
+            type="submit"
+            [chargement]="enChargement"
+          ></app-bouton>
+        </div>
+        
+        <div class="lien-connexion">
+          <span>Déjà un compte ?</span>
+          <a routerLink="/connexion">Connectez-vous</a>
+        </div>
+      </form>
+    </div>
+  </div>

@@ -1,0 +1,60 @@
+app:
+  name: "Crew AI Locale"
+  version: "1.0.0"
+  debug: true  # Active le mode débogage
+
+server:
+  host: "0.0.0.0"  # Écoute sur toutes les interfaces réseau
+  port: 8000       # Port du serveur FastAPI
+
+database:
+  type: "sqlite"  # Type de base de données (sqlite, postgres, mysql)
+  path: "data/db.sqlite"  # Chemin vers la BDD si SQLite
+  host: "localhost"
+  port: 5432
+  user: "admin"
+  password: "password123"
+
+agents:
+  manager:
+    model: "mistral"
+    temperature: 0.7
+  developer:
+    model: "codellama"
+    temperature: 0.8
+  tester:
+    model: "llama"
+    temperature: 0.6
+
+models:
+  engine: "ollama"
+  path: "/models"  # Chemin où sont stockés les modèles
+  available:
+    - "llama-3"
+    - "codellama"
+    - "mistral"
+
+api_keys:
+  huggingface: "your_hf_api_key"
+  openai: "your_openai_api_key"
+
+paths:
+  logs: "logs/app.log"
+  assets: "assets/"
+  temp: "tmp/"
+
+ui:
+  theme: "dark"
+  refresh_interval: 5  # Fréquence de rafraîchissement en secondes
+
+hardware:
+  cpu_cores: 8
+  ram: 32  # en GB
+  gpu: 
+    enabled: true
+    vram: 12  # en GB
+
+logging:
+  level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+

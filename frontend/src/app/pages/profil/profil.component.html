@@ -1,0 +1,58 @@
+<!-- src/app/pages/profil/profil.component.html -->
+<div class="conteneur-profil">
+    <div class="carte-profil">
+      <h1 class="titre">Profil Utilisateur</h1>
+      
+      <div *ngIf="chargement" class="indicateur-chargement">
+        <div class="spinner"></div>
+        <p>Chargement des informations...</p>
+      </div>
+      
+      <div *ngIf="erreur" class="alerte-erreur">
+        {{ erreur }}
+        <p>
+          <a routerLink="/connexion">Retour à la connexion</a>
+        </p>
+      </div>
+      
+      <div *ngIf="!chargement && !erreur && utilisateur" class="info-profil">
+        <div class="section-profil">
+          <h2>Informations générales</h2>
+          <div class="ligne-info">
+            <span class="label">Nom d'utilisateur:</span>
+            <span class="valeur">{{ utilisateur.username }}</span>
+          </div>
+          <div class="ligne-info">
+            <span class="label">Email:</span>
+            <span class="valeur">{{ utilisateur.email }}</span>
+          </div>
+        </div>
+        
+        <div class="section-profil">
+          <h2>Compte</h2>
+          <div class="ligne-info">
+            <span class="label">Date d'inscription:</span>
+            <span class="valeur">{{ utilisateur.created_at | date:'dd/MM/yyyy à HH:mm' }}</span>
+          </div>
+          <div class="ligne-info" *ngIf="utilisateur.last_login">
+            <span class="label">Dernière connexion:</span>
+            <span class="valeur">{{ utilisateur.last_login | date:'dd/MM/yyyy à HH:mm' }}</span>
+          </div>
+          <div class="ligne-info">
+            <span class="label">Statut:</span>
+            <span class="valeur statut" [ngClass]="utilisateur.is_active ? 'actif' : 'inactif'">
+              {{ utilisateur.is_active ? 'Actif' : 'Inactif' }}
+            </span>
+          </div>
+        </div>
+        
+        <div class="actions-profil">
+          <app-bouton
+            texte="Déconnexion"
+            variante="secondaire"
+            (clic)="deconnexion()"
+          ></app-bouton>
+        </div>
+      </div>
+    </div>
+  </div>
