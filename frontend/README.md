@@ -1,59 +1,124 @@
-# Frontend
+# 🖥️ Rhododendron - Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.7.
+Interface utilisateur pour le projet Rhododendron, un système d'agents AI collaboratifs.
 
-## Development server
+## 📋 Prérequis
 
-To start a local development server, run:
+- Node.js 18+ et npm
+- Angular CLI 19.2.7+
+
+## 🛠 Installation
+
+1. Installer les dépendances :
+```bash
+npm install
+```
+
+2. Configurer les variables d'environnement :
+```bash
+# Vérifier et éditer src/environments/environment.ts pour le développement
+# Vérifier et éditer src/environments/environment.prod.ts pour la production
+```
+
+## 🚀 Lancement du serveur de développement
 
 ```bash
 ng serve
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+L'application sera disponible sur :
+- `http://localhost:4200/`
 
-## Code scaffolding
+L'application se rechargera automatiquement si vous modifiez l'un des fichiers source.
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## 🔧 Génération de code
 
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Angular CLI inclut des outils puissants pour générer du code :
 
 ```bash
+# Générer un composant
+ng generate component nom-du-composant
+
+# Générer un service
+ng generate service nom-du-service
+
+# Générer une directive
+ng generate directive nom-de-la-directive
+
+# Autres schématiques disponibles
 ng generate --help
 ```
 
-## Building
-
-To build the project run:
+## 📦 Compilation pour la production
 
 ```bash
 ng build
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+Les artefacts de build seront stockés dans le répertoire `dist/`. Le build utilise par défaut la configuration de production.
 
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
+## 🧪 Exécution des tests unitaires
 
 ```bash
 ng test
 ```
 
-## Running end-to-end tests
+Exécute les tests unitaires via [Karma](https://karma-runner.github.io).
 
-For end-to-end (e2e) testing, run:
+## 📊 Structure du projet
 
-```bash
-ng e2e
+```
+frontend/
+├── src/
+│   ├── app/
+│   │   ├── composants/         # Composants réutilisables
+│   │   │   ├── bouton/
+│   │   │   └── champ-formulaire/
+│   │   ├── core/               # Fonctionnalités fondamentales
+│   │   │   ├── gardes/         # Protections de routes
+│   │   │   └── intercepteurs/  # Intercepteurs HTTP
+│   │   ├── modeles/            # Interfaces et types
+│   │   ├── pages/              # Pages de l'application
+│   │   │   ├── connexion/
+│   │   │   ├── inscription/
+│   │   │   └── profil/
+│   │   ├── partage/            # Ressources partagées
+│   │   └── services/           # Services
+│   ├── environments/           # Configurations d'environnement
+│   ├── assets/                 # Ressources statiques
+│   └── styles.scss             # Styles globaux
+├── angular.json                # Configuration Angular
+└── package.json                # Dépendances npm
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## 🔑 Fonctionnalités principales
 
-## Additional Resources
+- **Authentification complète** : Inscription, connexion et gestion des sessions
+- **Gestion de profil utilisateur** : Visualisation et modification des informations
+- **Interface responsive** : Adaptée à tous les appareils
+- **Composants réutilisables** : Boutons, champs de formulaire, etc.
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+## 🔒 Sécurité
+
+- Authentification via JWT
+- Interception des requêtes HTTP pour ajouter le token
+- Protection des routes avec des guards
+- Validation des formulaires
+
+## 💡 Bonnes pratiques
+
+- Architecture modulaire et componentisée
+- Composants Angular standalone
+- Utilisation des formulaires réactifs
+- Gestion des erreurs centralisée
+
+## 📱 Compatibilité
+
+- Navigateurs modernes (Chrome, Firefox, Safari, Edge)
+- Design responsive pour mobile et desktop
+
+## 🔗 Ressources additionnelles
+
+- [Documentation officielle d'Angular](https://angular.io/docs)
+- [Documentation CLI Angular](https://angular.dev/tools/cli)
+- [Guide des formulaires réactifs](https://angular.io/guide/reactive-forms)
