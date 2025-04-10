@@ -1,23 +1,18 @@
 import { Component } from '@angular/core';
-import { RouterOutlet, RouterLink } from '@angular/router';
+import { RouterOutlet } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from './services/auth.service';
-import { Router } from '@angular/router';
+import { HeaderComponent } from './composants/header/header.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, CommonModule],
+  imports: [RouterOutlet, CommonModule, HeaderComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.scss'
 })
 export class AppComponent {
   title = 'Rhododendron';
   
-  constructor(public authService: AuthService, private router: Router) {}
-  
-  deconnexion(): void {
-    this.authService.deconnexion();
-    this.router.navigate(['/connexion']);
-  }
+  constructor(public authService: AuthService) {}
 }

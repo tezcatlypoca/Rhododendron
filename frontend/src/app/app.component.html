@@ -1,15 +1,5 @@
 <div class="app-container">
-  <header *ngIf="authService.utilisateur$ | async as utilisateur">
-    <nav class="navbar">
-      <div class="logo">
-        <h1>Rhododendron</h1>
-      </div>
-      <div class="nav-links">
-        <a routerLink="/profil" class="nav-link">Mon Profil</a>
-        <button class="nav-button" (click)="deconnexion()">Déconnexion</button>
-      </div>
-    </nav>
-  </header>
+  <app-header [titre]="title"></app-header>
   
   <main>
     <router-outlet></router-outlet>

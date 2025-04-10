@@ -4,7 +4,6 @@ import { Router, RouterLink } from '@angular/router';
 import { CommonModule, DatePipe } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { Utilisateur } from '../../modeles/auth.model';
-import { BoutonComponent } from '../../composants/bouton/bouton.component';
 
 /**
  * Page de profil utilisateur
@@ -18,7 +17,6 @@ import { BoutonComponent } from '../../composants/bouton/bouton.component';
   imports: [
     CommonModule,
     RouterLink,
-    BoutonComponent,
     DatePipe
   ]
 })

@@ -2,7 +2,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, of, throwError } from 'rxjs';
-import { catchError, map, tap } from 'rxjs/operators';
+import { catchError, map, tap, switchMap } from 'rxjs/operators';
 import { JwtHelperService } from '@auth0/angular-jwt';
 import { PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
@@ -58,8 +58,26 @@ export class AuthService {
       tap(reponse => {
         if (isPlatformBrowser(this.platformId)) {
           localStorage.setItem('access_token', reponse.access_token);
+          
+          // Créer un utilisateur temporaire pour mise à jour immédiate
+          try {
+            const decodedToken = this.jwtHelper.decodeToken(reponse.access_token);
+            const tempUtilisateur: Utilisateur = {
+              id: decodedToken.sub || '',
+              username: decodedToken.username || donnees.username,
+              email: decodedToken.email || '',
+              roles: decodedToken.roles || [],
+              is_active: true,
+              created_at: new Date().toISOString()
+            };
+            // Mettre à jour immédiatement l'état
+            this.utilisateurSubject.next(tempUtilisateur);
+          } catch (e) {
+            console.warn('Impossible de décoder le token pour mise à jour rapide');
+          }
         }
-        this.chargerProfilUtilisateur();
+        // Charger le profil complet
+        this.chargerProfilUtilisateur().subscribe();
       }),
       catchError(error => {
         console.error('Erreur de connexion:', error);

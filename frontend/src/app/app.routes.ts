@@ -1,3 +1,4 @@
+// src/app/app.routes.ts
 import { Routes } from '@angular/router';
 import { authGuard } from './core/gardes/auth.guard';
 
@@ -15,6 +16,28 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/profil/profil.component').then(m => m.ProfilComponent),
     canActivate: [authGuard] 
   },
-  { path: '', redirectTo: '/connexion', pathMatch: 'full' },
-  { path: '**', redirectTo: '/connexion' }
+  { 
+    path: 'dashboard', 
+    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [authGuard] 
+  },
+  // Routes pour les futures fonctionnalités
+  { 
+    path: 'agents', 
+    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [authGuard] 
+  },
+  { 
+    path: 'agents/:id', 
+    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [authGuard] 
+  },
+  { 
+    path: 'statistiques', 
+    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
+    canActivate: [authGuard] 
+  },
+  // Redirections par défaut
+  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+  { path: '**', redirectTo: '/dashboard' }
 ];
