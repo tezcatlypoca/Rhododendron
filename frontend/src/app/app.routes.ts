@@ -1,43 +1,23 @@
 // src/app/app.routes.ts
 import { Routes } from '@angular/router';
+import { ConnexionComponent } from './pages/connexion/connexion.component';
+import { InscriptionComponent } from './pages/inscription/inscription.component';
+import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { authGuard } from './core/gardes/auth.guard';
 
 export const routes: Routes = [
-  { 
-    path: 'connexion', 
-    loadComponent: () => import('./pages/connexion/connexion.component').then(m => m.ConnexionComponent) 
+  { path: '', redirectTo: 'connexion', pathMatch: 'full' },
+  { path: 'connexion', component: ConnexionComponent },
+  { path: 'inscription', component: InscriptionComponent },
+  {
+    path: 'dashboard',
+    component: DashboardComponent,
+    canActivate: [authGuard]
   },
-  { 
-    path: 'inscription', 
-    loadComponent: () => import('./pages/inscription/inscription.component').then(m => m.InscriptionComponent) 
-  },
-  { 
-    path: 'profil', 
+  {
+    path: 'profil',
     loadComponent: () => import('./pages/profil/profil.component').then(m => m.ProfilComponent),
-    canActivate: [authGuard] 
+    canActivate: [authGuard]
   },
-  { 
-    path: 'dashboard', 
-    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [authGuard] 
-  },
-  // Routes pour les futures fonctionnalités
-  { 
-    path: 'agents', 
-    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [authGuard] 
-  },
-  { 
-    path: 'agents/:id', 
-    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [authGuard] 
-  },
-  { 
-    path: 'statistiques', 
-    loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent),
-    canActivate: [authGuard] 
-  },
-  // Redirections par défaut
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  { path: '**', redirectTo: '/dashboard' }
+  { path: '**', redirectTo: 'connexion' }
 ];

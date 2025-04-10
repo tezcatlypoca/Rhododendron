@@ -11,9 +11,11 @@
 
 # Node
 /frontend/node_modules
+node_modules/
 npm-debug.log
 yarn-error.log
 package-lock.json
+yarn.lock
 
 # Angular specific
 .sass-cache/
@@ -26,11 +28,9 @@ package-lock.json
 # ========== BACKEND (FastAPI/Python) ==========
 
 # Environnement virtuel
-/rhodoenv/
 venv/
 env/
 ENV/
-.venv/
 
 # Base de données
 *.db
@@ -109,3 +109,60 @@ logs/
 # Système
 .DS_Store
 Thumbs.db
+
+# Frontend Angular
+frontend/dist/
+frontend/tmp/
+frontend/out-tsc/
+frontend/.angular/
+frontend/node_modules/
+frontend/.sass-cache/
+frontend/connect.lock/
+frontend/coverage/
+frontend/libpeerconnection.log/
+frontend/npm-debug.log
+frontend/yarn-error.log
+frontend/testem.log
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+frontend/.firebase/
+frontend/.cache/
+frontend/.next/
+frontend/.nuxt/
+frontend/.serverless/
+frontend/.vercel/
+frontend/.vscode/
+frontend/.idea/
+frontend/.history/
+frontend/.DS_Store
+frontend/Thumbs.db
+frontend/.yarn/
+frontend/.pnp.*
+frontend/.pnp
+frontend/.yarnrc.yml
+frontend/yarn.lock
+frontend/package-lock.json
+frontend/.npm
+frontend/.eslintcache
+frontend/.stylelintcache
+frontend/.rpt2_cache/
+frontend/.rts2_cache_cjs/
+frontend/.rts2_cache_es/
+frontend/.rts2_cache_umd/
+frontend/.node_repl_history
+frontend/.vscode-test/
+frontend/.vscode-test-cli/
+frontend/.vscode-test-server/
+frontend/.vscode-test-workspace/
+frontend/.vscode-test-workspace-storage/
+frontend/.vscode-test-workspace-state/
+frontend/.vscode-test-workspace-settings/
+frontend/.vscode-test-workspace-extensions/
+frontend/.vscode-test-workspace-memento/
+frontend/.vscode-test-workspace-global-state/
+frontend/.vscode-test-workspace-workspace-state/
+frontend/.vscode-test-workspace-workspace-settings/
+frontend/.vscode-test-workspace-workspace-extensions/
+frontend/.vscode-test-workspace-workspace-memento/
+frontend/.vscode-test-workspace-workspace-global-state/
