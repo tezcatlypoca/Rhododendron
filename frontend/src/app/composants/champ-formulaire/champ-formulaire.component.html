@@ -1,0 +1,18 @@
+<!-- src/app/composants/champ-formulaire/champ-formulaire.component.html -->
+<div class="champ-formulaire">
+  <label *ngIf="label" class="champ-label">{{ label }}</label>
+  <input
+    [type]="type"
+    [placeholder]="placeholder"
+    [value]="value"
+    [disabled]="disabled"
+    (input)="onValueChange($event)"
+    (blur)="onBlur()"
+    class="champ-input"
+    [ngClass]="{'champ-erreur': aDesErreurs}"
+    [attr.autocomplete]="getAutocompleteAttribute()"
+  />
+  <div *ngIf="aDesErreurs" class="messages-erreur">
+    <p *ngFor="let message of messagesErreur" class="message-erreur">{{ message }}</p>
+  </div>
+</div>

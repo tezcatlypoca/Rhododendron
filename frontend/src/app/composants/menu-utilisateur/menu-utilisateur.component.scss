@@ -1,0 +1,105 @@
+/* src/app/composants/menu-utilisateur/menu-utilisateur.component.scss */
+.utilisateur-menu {
+    position: relative;
+  }
+  
+  .utilisateur-bouton {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background-color 0.2s;
+    
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+  }
+  
+  .utilisateur-nom {
+    font-weight: 500;
+    color: var(--couleur-texte, #333);
+    margin-right: 0.5rem;
+  }
+  
+  .fleche {
+    display: inline-block;
+    width: 0;
+    height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid var(--couleur-texte, #333);
+    transition: transform 0.2s ease;
+  }
+  
+  .fleche-ouverte {
+    transform: rotate(180deg);
+  }
+  
+  .menu-deroulant {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #fff;
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 180px;
+    z-index: 100;
+    margin-top: 0.5rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  }
+  
+  .menu-ouvert {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+  }
+  
+  .menu-options {
+    list-style: none;
+    padding: 0.5rem 0;
+    margin: 0;
+  }
+  
+  .menu-option {
+    display: block;
+    padding: 0.75rem 1rem;
+    color: var(--couleur-texte, #333);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+    cursor: pointer;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+    
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+    
+    &.deconnexion {
+      color: var(--couleur-erreur, #e53935);
+      
+      &:hover {
+        background-color: rgba(229, 57, 53, 0.1);
+      }
+    }
+  }
+  
+  /* Style responsive */
+  @media (max-width: 768px) {
+    .menu-deroulant {
+      position: static;
+      box-shadow: none;
+      margin-top: 0.5rem;
+      width: 100%;
+    }
+  }

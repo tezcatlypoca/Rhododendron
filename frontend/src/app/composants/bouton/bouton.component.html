@@ -1,0 +1,15 @@
+<!-- src/app/composants/bouton/bouton.component.html -->
+<button 
+  [type]="type"
+  [disabled]="desactive || chargement"
+  [ngClass]="[
+    'bouton',
+    'bouton-' + variante,
+    chargement ? 'bouton-chargement' : '',
+    desactive ? 'bouton-desactive' : ''
+  ]"
+  (click)="onClick($event)"
+>
+  <span class="indicateur-chargement" *ngIf="chargement"></span>
+  <span [ngClass]="{ 'texte-masque': chargement }">{{ texte }}</span>
+</button>

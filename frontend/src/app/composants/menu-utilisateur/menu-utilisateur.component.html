@@ -1,0 +1,14 @@
+<!-- src/app/composants/menu-utilisateur/menu-utilisateur.component.html -->
+<div class="utilisateur-menu">
+    <button type="button" class="utilisateur-bouton" (click)="toggleMenu()">
+      <span class="utilisateur-nom">{{ utilisateur?.username }}</span>
+      <span class="fleche" [class.fleche-ouverte]="menuOuvert"></span>
+    </button>
+    
+    <div class="menu-deroulant" [class.menu-ouvert]="menuOuvert">
+      <ul class="menu-options">
+        <li><a routerLink="/profil" class="menu-option">Mon profil</a></li>
+        <li><button class="menu-option deconnexion" (click)="deconnexion()">Déconnexion</button></li>
+      </ul>
+    </div>
+  </div>

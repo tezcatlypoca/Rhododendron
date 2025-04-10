@@ -1,0 +1,60 @@
+/* src/app/pages/connexion/connexion.component.scss */
+.conteneur-connexion {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f5f7fa;
+    padding: 1rem;
+  }
+  
+  .carte-connexion {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    width: 100%;
+    max-width: 400px;
+  }
+  
+  .titre {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #333;
+    font-weight: 600;
+  }
+  
+  .alerte-erreur {
+    background-color: #fee;
+    color: #e53935;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .lien-inscription {
+    margin-top: 1.5rem;
+    text-align: center;
+    font-size: 0.9rem;
+    
+    span {
+      color: #666;
+    }
+    
+    a {
+      color: #4a8fee;
+      margin-left: 0.5rem;
+      text-decoration: none;
+      
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }

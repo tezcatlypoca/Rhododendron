@@ -1,0 +1,41 @@
+<!-- src/app/pages/connexion/connexion.component.html -->
+<div class="conteneur-connexion">
+    <div class="carte-connexion">
+      <h1 class="titre">Connexion</h1>
+      
+      <form [formGroup]="formulaireConnexion" (ngSubmit)="onSubmit()">
+        <div *ngIf="erreurMessage" class="alerte-erreur">
+          {{ erreurMessage }}
+        </div>
+        
+        <app-champ-formulaire
+          label="Identifiant ou email"
+          type="text"
+          placeholder="Entrez votre identifiant ou email"
+          [control]="formulaireConnexion.get('username')!"
+          [erreurMessages]="messagesErreur.username"
+        ></app-champ-formulaire>
+        
+        <app-champ-formulaire
+          label="Mot de passe"
+          type="password"
+          placeholder="Entrez votre mot de passe"
+          [control]="formulaireConnexion.get('password')!"
+          [erreurMessages]="messagesErreur.password"
+        ></app-champ-formulaire>
+        
+        <div class="actions">
+          <app-bouton
+            texte="Se connecter"
+            type="submit"
+            [chargement]="enChargement"
+          ></app-bouton>
+        </div>
+        
+        <div class="lien-inscription">
+          <span>Pas encore de compte ?</span>
+          <a routerLink="/inscription">Inscrivez-vous</a>
+        </div>
+      </form>
+    </div>
+  </div>

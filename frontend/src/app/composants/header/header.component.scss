@@ -1,0 +1,180 @@
+/* src/app/composants/header/header.component.scss */
+.header {
+  background-color: #fff;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 1.5rem;
+  height: 70px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--couleur-primaire, #4a8fee);
+  cursor: pointer;
+  margin: 0;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+}
+
+.nav-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  align-items: center;
+}
+
+.nav-item {
+  margin-right: 1.5rem;
+  position: relative;
+  
+  &:last-child {
+    margin-right: 0;
+  }
+}
+
+.nav-link {
+  color: var(--couleur-texte, #333);
+  text-decoration: none;
+  font-weight: 500;
+  padding: 0.5rem 0;
+  position: relative;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: var(--couleur-primaire, #4a8fee);
+  }
+  
+  &.active {
+    color: var(--couleur-primaire, #4a8fee);
+    
+    &:after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background-color: var(--couleur-primaire, #4a8fee);
+    }
+  }
+}
+
+/* Styles pour le menu utilisateur */
+.utilisateur-menu {
+  position: relative;
+}
+
+.utilisateur-info {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    
+    .menu-deroulant {
+      display: block;
+    }
+  }
+}
+
+.utilisateur-nom {
+  font-weight: 500;
+  color: var(--couleur-texte, #333);
+  display: flex;
+  align-items: center;
+  
+  &::after {
+    content: '\25BC'; /* Flèche vers le bas */
+    font-size: 0.6rem;
+    margin-left: 0.5rem;
+  }
+}
+
+.menu-deroulant {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 180px;
+  z-index: 100;
+  margin-top: 0.5rem;
+}
+
+.menu-options {
+  list-style: none;
+  padding: 0.5rem 0;
+  margin: 0;
+}
+
+.menu-option {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: var(--couleur-texte, #333);
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+  cursor: pointer;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  &.deconnexion {
+    color: var(--couleur-erreur, #e53935);
+    
+    &:hover {
+      background-color: rgba(229, 57, 53, 0.1);
+    }
+  }
+}
+
+/* Style responsive */
+@media (max-width: 768px) {
+  .nav-list {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .utilisateur-menu {
+    width: 100%;
+  }
+  
+  .menu-deroulant {
+    position: static;
+    box-shadow: none;
+    margin-top: 0.5rem;
+    width: 100%;
+  }
+}

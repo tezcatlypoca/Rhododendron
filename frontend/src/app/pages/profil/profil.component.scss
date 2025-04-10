@@ -1,0 +1,127 @@
+/* src/app/pages/profil/profil.component.scss */
+.conteneur-profil {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f5f7fa;
+    padding: 1rem;
+  }
+  
+  .carte-profil {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  .titre {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: #333;
+    font-weight: 600;
+  }
+  
+  .indicateur-chargement {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem 0;
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: #4a8fee;
+      animation: rotation 1s infinite linear;
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      color: #666;
+    }
+  }
+  
+  .alerte-erreur {
+    background-color: #fee;
+    color: #e53935;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    text-align: center;
+    
+    a {
+      color: #e53935;
+      text-decoration: underline;
+      font-weight: 500;
+      
+      &:hover {
+        text-decoration: none;
+      }
+    }
+  }
+  
+  .info-profil {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  
+  .section-profil {
+    h2 {
+      font-size: 1.2rem;
+      color: #333;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #eee;
+    }
+  }
+  
+  .ligne-info {
+    display: flex;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0;
+    
+    .label {
+      flex: 0 0 40%;
+      font-weight: 500;
+      color: #555;
+    }
+    
+    .valeur {
+      flex: 1;
+      color: #333;
+      
+      &.statut {
+        font-weight: 500;
+        
+        &.actif {
+          color: #4caf50;
+        }
+        
+        &.inactif {
+          color: #f44336;
+        }
+      }
+    }
+  }
+  
+  .actions-profil {
+    display: flex;
+    justify-content: center;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #eee;
+  }
+  
+  @keyframes rotation {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }

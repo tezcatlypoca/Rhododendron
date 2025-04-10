@@ -1,0 +1,42 @@
+<!-- src/app/composants/header/header.component.html -->
+<header class="header">
+  <div class="header-container">
+    <div class="logo-container">
+      <h1 class="logo" routerLink="/dashboard">{{ titre }}</h1>
+    </div>
+
+    <nav class="nav">
+      <!-- Menu pour utilisateur connecté -->
+      <ul class="nav-list" *ngIf="authService.utilisateur$ | async as utilisateur">
+        <li class="nav-item">
+          <a routerLink="/dashboard" class="nav-link" routerLinkActive="active">Tableau de bord</a>
+        </li>
+        
+        <!-- Utilisation du nouveau composant menu-utilisateur -->
+        <li class="nav-item">
+          <app-menu-utilisateur [utilisateur]="utilisateur"></app-menu-utilisateur>
+        </li>
+      </ul>
+
+      <!-- Menu alternatif en cas de désynchronisation -->
+      <ul class="nav-list" *ngIf="estConnecte && !(authService.utilisateur$ | async)">
+        <li class="nav-item">
+          <a routerLink="/dashboard" class="nav-link" routerLinkActive="active">Tableau de bord</a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/profil" class="nav-link" routerLinkActive="active">Mon profil</a>
+        </li>
+      </ul>
+
+      <!-- Menu pour visiteur non connecté -->
+      <ul class="nav-list" *ngIf="!estConnecte && !(authService.utilisateur$ | async)">
+        <li class="nav-item">
+          <a routerLink="/connexion" class="nav-link" routerLinkActive="active">Connexion</a>
+        </li>
+        <li class="nav-item">
+          <a routerLink="/inscription" class="nav-link" routerLinkActive="active">Inscription</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,71 @@
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  
+  header {
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  
+  .logo h1 {
+    color: var(--couleur-primaire);
+    margin: 0;
+    font-size: 1.5rem;
+  }
+  
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .nav-link {
+    color: var(--couleur-texte);
+    text-decoration: none;
+    font-weight: 500;
+    
+    &:hover {
+      color: var(--couleur-primaire);
+    }
+  }
+  
+  .nav-button {
+    background: none;
+    border: 1px solid var(--couleur-primaire);
+    color: var(--couleur-primaire);
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background-color: var(--couleur-primaire);
+      color: white;
+    }
+  }
+  
+  main {
+    flex: 1;
+    width: 100%;
+  }
+  
+  footer {
+    background-color: #f5f5f5;
+    padding: 1rem;
+    text-align: center;
+    color: var(--couleur-texte-secondaire);
+    font-size: 0.9rem;
+  }
