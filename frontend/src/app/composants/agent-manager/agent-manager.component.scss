@@ -1,0 +1,41 @@
+/* src/app/composants/agent-manager/agent-manager.component.scss */
+.agent-manager-container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .tabs-container {
+    display: flex;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .tab {
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 2px solid transparent;
+    
+    &:hover {
+      background-color: rgba(0, 0, 0, 0.03);
+    }
+    
+    &.active {
+      border-bottom-color: var(--couleur-primaire, #4a8fee);
+      
+      .tab-label {
+        color: var(--couleur-primaire, #4a8fee);
+        font-weight: 500;
+      }
+    }
+  }
+  
+  .tab-label {
+    color: var(--couleur-texte, #333);
+  }
+  
+  .tab-content {
+    min-height: 400px;
+  }

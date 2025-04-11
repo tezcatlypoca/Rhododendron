@@ -1,0 +1,27 @@
+<!-- src/app/composants/agent-manager/agent-manager.component.html -->
+<div class="agent-manager-container">
+    <div class="tabs-container">
+      <div 
+        class="tab" 
+        [class.active]="ongletActif === 'liste'"
+        (click)="changerOnglet('liste')">
+        <span class="tab-label">Liste des agents</span>
+      </div>
+      <div 
+        class="tab" 
+        [class.active]="ongletActif === 'creation'"
+        (click)="changerOnglet('creation')">
+        <span class="tab-label">Créer un agent</span>
+      </div>
+    </div>
+    
+    <div class="tab-content">
+      <div *ngIf="ongletActif === 'liste'">
+        <app-agent-liste></app-agent-liste>
+      </div>
+      
+      <div *ngIf="ongletActif === 'creation'">
+        <app-agent-creation (agentCreated)="onAgentCreated()"></app-agent-creation>
+      </div>
+    </div>
+  </div>
