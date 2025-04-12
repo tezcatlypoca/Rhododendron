@@ -4,6 +4,8 @@ import json
 import subprocess
 import tempfile
 import sys
+from ..models.conversation import Message, MessageRole
+from ..services.conversation_service import ConversationService
 
 class LLMInterface:
     _instance = None
@@ -15,6 +17,7 @@ class LLMInterface:
 
     def __init__(self):
         self.model_name = "codellama:7b-instruct-q4_0"
+        self.conversation_service = ConversationService()
         print(f"Interface LLM initialisée avec le modèle {self.model_name}")
         
         # Configuration pour utiliser le GPU AMD
@@ -39,19 +42,20 @@ class LLMInterface:
             print(f"Erreur lors de la vérification du modèle : {str(e)}")
             raise
 
-    def generate_response(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> str:
+    def generate_response(self, prompt: str, context: Optional[Dict[str, Any]] = None, conversation_id: Optional[str] = None) -> str:
         """
         Génère une réponse à partir d'un prompt et d'un contexte optionnel en utilisant Ollama en local.
         
         Args:
             prompt: Le prompt de l'utilisateur
             context: Dictionnaire contenant le contexte de l'agent (role, etc.)
+            conversation_id: ID de la conversation en cours (optionnel)
         
         Returns:
             La réponse générée par le modèle
         """
         # Construction du prompt complet avec le contexte
-        full_prompt = self._build_prompt(prompt, context)
+        full_prompt = self._build_prompt(prompt, context, conversation_id)
         print(f"Prompt complet : {full_prompt}")
         
         try:
@@ -77,20 +81,44 @@ class LLMInterface:
             
             response = stdout.strip()
             print(f"Réponse générée : {response[:100]}...")
+
+            # Si une conversation_id est fournie, sauvegarder les messages
+            if conversation_id:
+                user_message = Message(role=MessageRole.USER, content=prompt)
+                assistant_message = Message(role=MessageRole.ASSISTANT, content=response)
+                self.conversation_service.add_message(conversation_id, user_message)
+                self.conversation_service.add_message(conversation_id, assistant_message)
+            
             return response
             
         except Exception as e:
             print(f"Erreur lors de la génération de la réponse : {str(e)}")
             raise
 
-    def _build_prompt(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> str:
+    def _build_prompt(self, prompt: str, context: Optional[Dict[str, Any]] = None, conversation_id: Optional[str] = None) -> str:
         """
-        Construit le prompt complet en incluant le contexte.
+        Construit le prompt complet en incluant le contexte et l'historique de la conversation.
         """
-        if context is None:
-            return prompt
-            
-        role = context.get("role", "assistant")
-        system_prompt = f"Tu es un {role}. Réponds de manière professionnelle et précise."
+        # Récupération de l'historique de la conversation si disponible
+        conversation_history = ""
+        if conversation_id:
+            conversation = self.conversation_service.get_conversation(conversation_id)
+            if conversation:
+                # On prend les 5 derniers messages pour le contexte
+                last_messages = conversation.get_last_messages(5)
+                for msg in last_messages:
+                    role_prefix = "Utilisateur" if msg.role == MessageRole.USER else "Assistant"
+                    conversation_history += f"{role_prefix}: {msg.content}\n"
         
-        return f"{system_prompt}\n\nUtilisateur: {prompt}\nAssistant:" 
+        # Construction du prompt système
+        if context is None:
+            system_prompt = "Tu es un assistant IA. Réponds de manière professionnelle et précise."
+        else:
+            role = context.get("role", "assistant")
+            system_prompt = f"Tu es un {role}. Réponds de manière professionnelle et précise."
+        
+        # Construction du prompt final
+        if conversation_history:
+            return f"{system_prompt}\n\nHistorique de la conversation :\n{conversation_history}\n\nUtilisateur: {prompt}\nAssistant:"
+        else:
+            return f"{system_prompt}\n\nUtilisateur: {prompt}\nAssistant:" 

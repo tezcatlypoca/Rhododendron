@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 
-from src.api.routes import auth, agent_routes
+from src.api.routes import auth, agent_routes, conversation_routes
 from src.core.config import settings
 
 app = FastAPI(
@@ -32,6 +32,7 @@ app.add_middleware(
 # Inclusion des routes
 app.include_router(auth.router)
 app.include_router(agent_routes.router)
+app.include_router(conversation_routes.router)
 
 @app.get("/")
 async def root():
