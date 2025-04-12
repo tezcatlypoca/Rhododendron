@@ -61,6 +61,10 @@
       </div>
       
       <div class="agent-actions">
+        <a [routerLink]="['/edition-agent', agent.id]" class="edit-button">
+          <span class="material-icons">edit</span>
+          Éditer
+        </a>
         <a [routerLink]="['/conversations', agent.id]" class="conversation-button">
           <span class="material-icons">chat</span>
           Converser

@@ -29,5 +29,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/conversation/conversation.component').then(m => m.ConversationComponent),
     canActivate: [authGuard]
   },
+  {
+    path: 'edition-agent/:id',
+    loadComponent: () => import('./pages/agent-edition/agent-edition.component').then(m => m.AgentEditionComponent),
+    canActivate: [authGuard]
+  },
   { path: '**', redirectTo: 'connexion' }
 ];
