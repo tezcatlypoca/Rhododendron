@@ -1,20 +1,30 @@
-from fastapi import APIRouter, HTTPException
-from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Depends, Body
+from sqlalchemy.orm import Session
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
-from ...models.conversation import Conversation, Message, MessageRole
-from ...models.dto.agent_dto import AgentRequestDTO, AgentResponseRequestDTO
-from ...services.llm_interface import LLMInterface
+from ...models.domain.conversation import Message, MessageRole
+from ...database.models import Conversation
+from ...models.dto.conversation_dto import (
+    ConversationCreateDTO,
+    ConversationUpdateDTO,
+    ConversationResponseDTO,
+    MessageCreateDTO,
+    MessageResponseDTO
+)
 from ...services.conversation_service import ConversationService
 from ...services.agent_service import AgentService
+from ...database import get_db
 from datetime import datetime
 
 router = APIRouter(
     prefix="/conversations",
     tags=["conversations"],
-    responses={404: {"description": "Non trouvé"}},
+    responses={
+        404: {"description": "Conversation non trouvée"},
+        400: {"description": "Requête invalide"}
+    }
 )
 
-llm_interface = LLMInterface()
 conversation_service = ConversationService()
 agent_service = AgentService()
 
@@ -22,254 +32,144 @@ class ConversationCreate(BaseModel):
     title: str
     agent_id: Optional[str] = None
 
-@router.post("", response_model=Conversation, summary="Créer une nouvelle conversation")
-async def create_conversation(conversation: ConversationCreate):
-    """
-    Crée une nouvelle conversation avec un titre et un agent optionnel.
-    
-    Args:
-        conversation (ConversationCreate): Les données de la conversation à créer
-        
-    Returns:
-        Conversation: La conversation créée
-        
-    Raises:
-        HTTPException: Si l'agent spécifié n'existe pas
-    """
-    new_conversation = conversation_service.create_conversation(conversation.title)
-    if conversation.agent_id:
-        agent = agent_service.get_agent(conversation.agent_id)
-        if not agent:
-            raise HTTPException(status_code=404, detail="Agent non trouvé")
-        new_conversation.agent_id = conversation.agent_id
-        conversation_service._save_conversation(new_conversation)
-    return new_conversation
+class UpdateAgentDTO(BaseModel):
+    agent_id: Optional[str] = None
 
-@router.get("", response_model=List[Conversation], summary="Lister toutes les conversations")
-async def get_all_conversations():
-    """
-    Récupère la liste de toutes les conversations existantes.
-    
-    Returns:
-        List[Conversation]: Liste des conversations
-    """
-    return conversation_service.get_all_conversations()
+class UpdateTitleDTO(BaseModel):
+    title: str
 
-@router.get("/{conversation_id}", response_model=Conversation, summary="Obtenir une conversation")
-async def get_conversation(conversation_id: str):
-    """
-    Récupère les détails d'une conversation spécifique.
-    
-    Args:
-        conversation_id (str): L'ID de la conversation à récupérer
-        
-    Returns:
-        Conversation: Les détails de la conversation
-        
-    Raises:
-        HTTPException: Si la conversation n'existe pas
-    """
-    conversation = conversation_service.get_conversation(conversation_id)
+class MessageCreate(BaseModel):
+    role: str
+    content: str
+    metadata: Optional[Dict[str, Any]] = None
+
+class MessageLimit(BaseModel):
+    limit: Optional[int] = None
+
+@router.post(
+    "/",
+    response_model=ConversationResponseDTO,
+    summary="Créer une nouvelle conversation",
+    description="Crée une nouvelle conversation avec les paramètres spécifiés."
+)
+async def create_conversation(conversation_data: ConversationCreate, db: Session = Depends(get_db)):
+    """Crée une nouvelle conversation"""
+    return conversation_service.create_conversation(conversation_data, db)
+
+@router.get(
+    "/",
+    response_model=List[ConversationResponseDTO],
+    summary="Lister toutes les conversations",
+    description="Récupère la liste complète de toutes les conversations."
+)
+async def list_conversations(db: Session = Depends(get_db)):
+    """Liste toutes les conversations"""
+    return conversation_service.get_all_conversations(db)
+
+@router.get(
+    "/{conversation_id}",
+    response_model=ConversationResponseDTO,
+    summary="Récupérer une conversation",
+    description="Récupère les détails d'une conversation spécifique par son identifiant unique."
+)
+async def get_conversation(conversation_id: str, db: Session = Depends(get_db)):
+    """Récupère une conversation par son ID"""
+    conversation = conversation_service.get_conversation(conversation_id, db)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation non trouvée")
     return conversation
 
-@router.get("/{conversation_id}/messages", response_model=List[Message], summary="Obtenir les messages d'une conversation")
-async def get_conversation_messages(conversation_id: str, limit: Optional[int] = None):
-    """
-    Récupère les messages d'une conversation, avec une limite optionnelle.
-    
-    Args:
-        conversation_id (str): L'ID de la conversation
-        limit (Optional[int]): Nombre maximum de messages à récupérer
-        
-    Returns:
-        List[Message]: Liste des messages de la conversation
-        
-    Raises:
-        HTTPException: Si la conversation n'existe pas ou ne contient pas de messages
-    """
-    messages = conversation_service.get_messages(conversation_id, limit)
-    if not messages:
-        raise HTTPException(status_code=404, detail="Aucun message trouvé")
-    return messages
-
-@router.post("/{conversation_id}/messages", response_model=Message, summary="Ajouter un message")
-async def add_message(conversation_id: str, message: Message):
-    """
-    Ajoute un nouveau message à une conversation existante.
-    
-    Args:
-        conversation_id (str): L'ID de la conversation
-        message (Message): Le message à ajouter
-        
-    Returns:
-        Message: Le message ajouté
-        
-    Raises:
-        HTTPException: Si la conversation n'existe pas ou si l'ajout échoue
-    """
-    conversation = conversation_service.get_conversation(conversation_id)
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation non trouvée")
-    
-    updated_conversation = conversation_service.add_message(conversation_id, message)
-    if not updated_conversation:
-        raise HTTPException(status_code=500, detail="Erreur lors de l'ajout du message")
-    
-    return message
-
-@router.post("/{conversation_id}/send", response_model=Message, summary="Envoyer un message et obtenir une réponse")
-async def send_message(conversation_id: str, request: AgentRequestDTO):
-    """
-    Envoie un message dans une conversation et obtient la réponse de l'agent associé.
-    
-    Args:
-        conversation_id (str): L'ID de la conversation
-        request (AgentRequestDTO): Le message à envoyer
-        
-    Returns:
-        Message: La réponse de l'agent
-        
-    Raises:
-        HTTPException: Si la conversation n'existe pas, n'a pas d'agent associé, ou si l'agent n'existe pas
-    """
-    conversation = conversation_service.get_conversation(conversation_id)
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation non trouvée")
-    
-    if not conversation.agent_id:
-        raise HTTPException(status_code=400, detail="Aucun agent associé à cette conversation")
-    
-    # Créer et sauvegarder le message de l'utilisateur
-    user_message = Message(
-        role=MessageRole.USER,
-        content=request.prompt
-    )
-    conversation_service.add_message(conversation_id, user_message)
-    
-    # Récupérer l'agent
-    agent = agent_service.get_agent(conversation.agent_id)
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent non trouvé")
-    
-    # Générer la réponse avec le contexte de la conversation
-    response = llm_interface.generate_response(
-        prompt=request.prompt,
-        context={
-            "role": agent.role,
-            "model_type": agent.model_type,
-            **agent.configuration
-        },
-        conversation_id=conversation_id
-    )
-    
-    # Créer et sauvegarder la réponse de l'agent
-    agent_message = Message(
-        role=MessageRole.ASSISTANT,
-        content=response,
-        agent_id=conversation.agent_id
-    )
-    conversation_service.add_message(conversation_id, agent_message)
-    
-    return agent_message
-
-@router.delete("/{conversation_id}/messages/{message_id}", summary="Supprimer un message")
-async def delete_message(conversation_id: str, message_id: str):
-    """
-    Supprime un message spécifique d'une conversation.
-    
-    Args:
-        conversation_id (str): L'ID de la conversation
-        message_id (str): L'ID du message à supprimer
-        
-    Returns:
-        dict: Statut de la suppression
-        
-    Raises:
-        HTTPException: Si la conversation ou le message n'existe pas
-    """
-    conversation = conversation_service.get_conversation(conversation_id)
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation non trouvée")
-    
-    # Trouver et supprimer le message
-    message_to_remove = None
-    for message in conversation.messages:
-        if message.id == message_id:
-            message_to_remove = message
-            break
-    
-    if not message_to_remove:
-        raise HTTPException(status_code=404, detail="Message non trouvé")
-    
-    conversation.messages.remove(message_to_remove)
-    conversation_service._save_conversation(conversation)
-    
-    return {"status": "success", "message": "Message supprimé"}
-
-@router.put("/{conversation_id}/title", response_model=Conversation, summary="Mettre à jour le titre")
-async def update_conversation_title(conversation_id: str, new_title: str):
-    """
-    Met à jour le titre d'une conversation existante.
-    
-    Args:
-        conversation_id (str): L'ID de la conversation
-        new_title (str): Le nouveau titre
-        
-    Returns:
-        Conversation: La conversation mise à jour
-        
-    Raises:
-        HTTPException: Si la conversation n'existe pas
-    """
-    conversation = conversation_service.update_conversation_title(conversation_id, new_title)
+@router.put(
+    "/{conversation_id}",
+    response_model=ConversationResponseDTO,
+    summary="Mettre à jour une conversation",
+    description="Met à jour les propriétés d'une conversation existante."
+)
+async def update_conversation(
+    conversation_id: str,
+    conversation_data: ConversationUpdateDTO,
+    db: Session = Depends(get_db)
+):
+    """Met à jour une conversation"""
+    conversation = conversation_service.update_conversation(conversation_id, conversation_data, db)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation non trouvée")
     return conversation
 
-@router.put("/{conversation_id}/agent", response_model=Conversation, summary="Mettre à jour l'agent")
-async def update_conversation_agent(conversation_id: str, agent_id: str):
-    """
-    Change l'agent associé à une conversation.
-    
-    Args:
-        conversation_id (str): L'ID de la conversation
-        agent_id (str): L'ID du nouvel agent
-        
-    Returns:
-        Conversation: La conversation mise à jour
-        
-    Raises:
-        HTTPException: Si la conversation ou l'agent n'existe pas
-    """
-    conversation = conversation_service.get_conversation(conversation_id)
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation non trouvée")
-    
-    agent = agent_service.get_agent(agent_id)
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent non trouvé")
-    
-    conversation.agent_id = agent_id
-    conversation_service._save_conversation(conversation)
-    return conversation
-
-@router.delete("/{conversation_id}", summary="Supprimer une conversation")
-async def delete_conversation(conversation_id: str):
-    """
-    Supprime une conversation et tous ses messages.
-    
-    Args:
-        conversation_id (str): L'ID de la conversation à supprimer
-        
-    Returns:
-        dict: Statut de la suppression
-        
-    Raises:
-        HTTPException: Si la conversation n'existe pas
-    """
-    success = conversation_service.delete_conversation(conversation_id)
+@router.delete("/{conversation_id}")
+async def delete_conversation(conversation_id: str, db: Session = Depends(get_db)):
+    """Supprime une conversation"""
+    success = conversation_service.delete_conversation(conversation_id, db)
     if not success:
         raise HTTPException(status_code=404, detail="Conversation non trouvée")
-    return {"status": "success", "message": "Conversation supprimée"} 
+    return {"message": "Conversation supprimée avec succès"}
+
+@router.post(
+    "/{conversation_id}/messages",
+    response_model=MessageResponseDTO,
+    summary="Ajouter un message",
+    description="Ajoute un nouveau message à une conversation existante."
+)
+async def add_message(conversation_id: str, message_data: MessageCreate, db: Session = Depends(get_db)):
+    """Ajoute un message à une conversation"""
+    message = conversation_service.add_message(conversation_id, message_data, db)
+    if not message:
+        raise HTTPException(status_code=404, detail="Conversation non trouvée")
+    return message
+
+@router.get(
+    "/{conversation_id}/messages",
+    response_model=List[MessageResponseDTO],
+    summary="Récupérer les messages",
+    description="Récupère tous les messages d'une conversation."
+)
+async def get_messages(
+    conversation_id: str,
+    limit_data: MessageLimit,
+    db: Session = Depends(get_db)
+):
+    """Récupère les messages d'une conversation"""
+    # Vérifier d'abord si la conversation existe
+    conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation non trouvée")
+    
+    messages = conversation_service.get_messages(conversation_id, db, limit_data.limit)
+    return messages
+
+@router.put(
+    "/{conversation_id}/agent",
+    response_model=ConversationResponseDTO,
+    summary="Mettre à jour l'agent d'une conversation",
+    description="Met à jour l'agent associé à une conversation. L'agent_id peut être null pour retirer l'agent de la conversation."
+)
+async def update_conversation_agent(
+    conversation_id: str,
+    update_data: UpdateAgentDTO,
+    db: Session = Depends(get_db)
+):
+    """Met à jour l'agent d'une conversation"""
+    conversation = conversation_service.update_conversation_agent(conversation_id, update_data.agent_id, db)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation non trouvée")
+    return conversation
+
+@router.put(
+    "/{conversation_id}/title",
+    response_model=ConversationResponseDTO,
+    summary="Mettre à jour le titre d'une conversation",
+    description="Change le titre d'une conversation."
+)
+async def update_conversation_title(
+    conversation_id: str,
+    update_data: UpdateTitleDTO,
+    db: Session = Depends(get_db)
+):
+    """Met à jour le titre d'une conversation"""
+    if not update_data.title:
+        raise HTTPException(status_code=400, detail="Le titre ne peut pas être vide")
+    
+    conversation = conversation_service.update_conversation_title(conversation_id, update_data.title, db)
+    if not conversation:
+        raise HTTPException(status_code=404, detail="Conversation non trouvée")
+    return conversation 

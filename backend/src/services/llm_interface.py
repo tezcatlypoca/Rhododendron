@@ -1,7 +1,7 @@
 from typing import Dict, Any, Optional
 import os
 from ctransformers import AutoModelForCausalLM
-from ..models.conversation import Message, MessageRole
+from ..models.domain.conversation import Message, MessageRole
 from ..services.conversation_service import ConversationService
 
 class LLMInterface:

@@ -12,6 +12,17 @@ from fastapi.openapi.utils import get_openapi
 
 from src.api.routes import auth, agent_routes, conversation_routes
 from src.core.config import settings
+from src.database import init_db
+from sqlalchemy import create_engine
+from src.database.models import Base
+
+# Vérification de l'existence de la base de données
+db_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "agents.db")
+if not os.path.exists(db_path):
+    print("Initialisation de la base de données...")
+    engine = create_engine('sqlite:///agents.db')
+    Base.metadata.create_all(bind=engine)
+    print("Base de données initialisée avec succès !")
 
 app = FastAPI(
     title=settings.APP_NAME,
