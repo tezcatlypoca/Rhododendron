@@ -1,0 +1,154 @@
+<!-- src/app/pages/agent-edition/agent-edition.component.html -->
+<div class="edition-container">
+    <div class="edition-header">
+      <button class="back-button" (click)="retourListe()">
+        <span class="material-icons">arrow_back</span>
+        Retour à la liste des agents
+      </button>
+      <h1 class="page-title">Édition de l'agent</h1>
+    </div>
+  
+    <div *ngIf="enChargement" class="loading-container">
+      <div class="spinner"></div>
+      <p>Chargement des informations de l'agent...</p>
+    </div>
+  
+    <div *ngIf="erreurMessage" class="error-container">
+      <div class="error-message">
+        {{ erreurMessage }}
+      </div>
+      <app-bouton
+        texte="Retour à la liste des agents"
+        variante="secondaire"
+        (clic)="retourListe()"
+      ></app-bouton>
+    </div>
+  
+    <div *ngIf="!enChargement && !erreurMessage && agent" class="form-container">
+      <div *ngIf="succesMessage" class="success-message">
+        {{ succesMessage }}
+      </div>
+      
+      <form [formGroup]="formulaireAgent" (ngSubmit)="onSubmit()">
+        <div class="form-section">
+          <h2 class="section-title">Informations générales</h2>
+          
+          <app-champ-formulaire
+            label="Nom de l'agent"
+            type="text"
+            placeholder="Nom descriptif pour cet agent"
+            [control]="formulaireAgent.get('name')!"
+            [erreurMessages]="messagesErreur.name"
+          ></app-champ-formulaire>
+          
+          <div class="champ-select">
+            <label class="champ-label">Type de modèle</label>
+            <select formControlName="model_type" class="select-input">
+              <option *ngFor="let type of modelTypes" [value]="type">{{ type }}</option>
+            </select>
+            <div *ngIf="formulaireAgent.get('model_type')?.invalid && formulaireAgent.get('model_type')?.touched" class="messages-erreur">
+              <p class="message-erreur">{{ messagesErreur.model_type.required }}</p>
+            </div>
+          </div>
+          
+          <div class="champ-switch">
+            <label class="switch-label">Statut de l'agent</label>
+            <div class="switch-container">
+              <label class="switch">
+                <input type="checkbox" formControlName="is_active">
+                <span class="slider round"></span>
+              </label>
+              <span class="switch-text">{{ formulaireAgent.get('is_active')?.value ? 'Actif' : 'Inactif' }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div formGroupName="config" class="form-section">
+          <h2 class="section-title">Configuration du comportement</h2>
+          
+          <div class="champ-select">
+            <label class="champ-label">Rôle de l'agent</label>
+            <select formControlName="role" class="select-input">
+              <option value="assistant">Assistant</option>
+              <option value="analyzer">Analyseur</option>
+              <option value="coder">Programmeur</option>
+              <option value="writer">Rédacteur</option>
+            </select>
+          </div>
+          
+          <app-champ-formulaire
+            label="Personnalité (optionnel)"
+            type="text"
+            placeholder="Décrivez la personnalité de l'agent"
+            [control]="formulaireAgent.get('config.personality')!"
+          ></app-champ-formulaire>
+          
+          <div class="form-row">
+            <div class="form-col">
+              <label class="champ-label">Température (créativité)</label>
+              <div class="slider-container">
+                <input 
+                  type="range" 
+                  formControlName="temperature"
+                  min="0" 
+                  max="1" 
+                  step="0.1" 
+                  class="range-slider"
+                >
+                <span class="slider-value">{{ formulaireAgent.get('config.temperature')?.value }}</span>
+              </div>
+              <div class="slider-legend">
+                <span>Précis</span>
+                <span>Créatif</span>
+              </div>
+            </div>
+            
+            <div class="form-col">
+              <app-champ-formulaire
+                label="Nombre max de tokens"
+                type="number"
+                [control]="formulaireAgent.get('config.max_tokens')!"
+              ></app-champ-formulaire>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-col">
+              <app-champ-formulaire
+                label="Fenêtre de contexte"
+                type="number"
+                [control]="formulaireAgent.get('config.context_window')!"
+              ></app-champ-formulaire>
+            </div>
+            
+            <div class="form-col">
+              <div class="champ-select">
+                <label class="champ-label">Stratégie de contexte</label>
+                <select formControlName="context_strategy" class="select-input">
+                  <option value="recency">Récence (derniers messages)</option>
+                  <option value="relevance">Pertinence (similarité)</option>
+                  <option value="combined">Combinée (récence + pertinence)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <app-bouton
+            texte="Annuler"
+            variante="tertiaire"
+            type="button"
+            (clic)="retourListe()"
+          ></app-bouton>
+          
+          <app-bouton
+            texte="Enregistrer les modifications"
+            type="submit"
+            [chargement]="enSauvegarde"
+            [desactive]="formulaireAgent.invalid || enSauvegarde"
+          ></app-bouton>
+        </div>
+      </form>
+    </div>
+  </div>

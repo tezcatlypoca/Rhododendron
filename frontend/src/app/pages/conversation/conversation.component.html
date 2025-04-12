@@ -1,30 +1,40 @@
 <!-- src/app/pages/conversation/conversation.component.html -->
 <div class="conversation-container">
-    <div class="conversation-header">
-      <button class="back-button" (click)="retourListe()">
-        <span class="material-icons">arrow_back</span>
-        Retour à la liste des agents
-      </button>
-      <h1 class="page-title">Conversation avec un agent</h1>
-    </div>
-  
-    <div *ngIf="enChargement" class="loading-container">
-      <div class="spinner"></div>
-      <p>Chargement de l'agent...</p>
-    </div>
-  
-    <div *ngIf="erreurMessage" class="error-container">
-      <div class="error-message">
-        {{ erreurMessage }}
-      </div>
-      <app-bouton
-        texte="Retour à la liste des agents"
-        variante="secondaire"
-        (clic)="retourListe()"
-      ></app-bouton>
-    </div>
-  
-    <div *ngIf="!enChargement && !erreurMessage && agent" class="chat-wrapper">
-      <app-chat [agent]="agent"></app-chat>
+  <div class="conversation-header">
+    <button class="back-button" routerLink="/dashboard">
+      <span class="material-icons">arrow_back</span>
+      Retour au tableau de bord
+    </button>
+    
+    <h1 class="page-title">
+      {{ conversation?.title || 'Nouvelle conversation' }}
+    </h1>
+    
+    <div class="agent-info" *ngIf="agent">
+      <span class="agent-badge">
+        {{ agent.name }}
+      </span>
     </div>
   </div>
+
+  <div class="loading-container" *ngIf="loading">
+    <div class="spinner"></div>
+    <p>Préparation de votre assistant...</p>
+  </div>
+
+  <div class="error-container" *ngIf="error">
+    <div class="error-message">
+      {{ error }}
+    </div>
+    <button class="retry-button" (click)="retry()">
+      Réessayer
+    </button>
+  </div>
+
+  <div class="conversation-content" *ngIf="!loading && !error && conversation">
+    <app-chat 
+      [conversationId]="conversation.id"
+      [agentName]="agent?.name || 'Assistant'"
+    ></app-chat>
+  </div>
+</div>

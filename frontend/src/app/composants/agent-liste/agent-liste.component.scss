@@ -182,6 +182,31 @@
   margin-top: 1rem;
   display: flex;
   justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.edit-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #f0f2f5;
+  color: var(--couleur-texte, #333);
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: #e4e6eb;
+    text-decoration: none;
+  }
+  
+  .material-icons {
+    font-size: 1rem;
+  }
 }
 
 .conversation-button {

@@ -1,96 +1,106 @@
 // src/app/services/conversation.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
-import { v4 as uuidv4 } from 'uuid';
+import { tap, catchError, map } from 'rxjs/operators';
 
 import { environment } from '../../environments/environment';
-import { Agent } from '../modeles/agent.model';
-import { Conversation, Message, MessageRequest, MessageResponse } from '../modeles/conversation.model';
+import { Conversation, Message, MessageRequest, MessageResponse, MessageRole } from '../modeles/conversation.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ConversationService {
-  private apiUrl = `${environment.apiUrl}/agents`;
+  private apiUrl = `${environment.apiUrl}`;
   
   // Conversation active
   private activeConversationSubject = new BehaviorSubject<Conversation | null>(null);
   activeConversation$ = this.activeConversationSubject.asObservable();
-  
-  // Map des conversations par agent
-  private conversations: Map<string, Conversation> = new Map();
 
   constructor(private http: HttpClient) {}
 
   /**
-   * Démarre ou continue une conversation avec un agent
+   * Crée une nouvelle conversation
    */
-  startConversation(agent: Agent): void {
-    let conversation = this.conversations.get(agent.id);
+  createConversation(title: string, agent_id?: string): Observable<Conversation> {
+    // CORRECTION IMPORTANTE: Utiliser HttpParams pour les paramètres de requête
+    let params = new HttpParams()
+      .set('title', title);
     
-    if (!conversation) {
-      // Créer une nouvelle conversation si elle n'existe pas
-      conversation = {
-        id: uuidv4(),
-        agentId: agent.id,
-        messages: [],
-        lastActivity: new Date()
-      };
-      this.conversations.set(agent.id, conversation);
+    if (agent_id) {
+      params = params.set('agent_id', agent_id);
     }
     
-    this.activeConversationSubject.next(conversation);
+    // Notez que le corps est null et les paramètres sont passés via params
+    return this.http.post<Conversation>(`${this.apiUrl}/conversations`, null, { params })
+      .pipe(
+        tap(conversation => {
+          this.activeConversationSubject.next(conversation);
+        }),
+        catchError(error => {
+          console.error('Erreur lors de la création de la conversation:', error);
+          return throwError(() => new Error(error.error?.detail || 'Erreur lors de la création de la conversation'));
+        })
+      );
   }
 
   /**
-   * Envoie un message à l'agent et ajoute la réponse à la conversation
+   * Récupère toutes les conversations
    */
-  sendMessage(message: string): Observable<MessageResponse> {
-    const conversation = this.activeConversationSubject.value;
-    
-    if (!conversation) {
-      return throwError(() => new Error('Aucune conversation active'));
-    }
-    
-    // Ajouter le message de l'utilisateur à la conversation
-    const userMessage: Message = {
-      id: uuidv4(),
-      sender: 'user',
-      content: message,
-      timestamp: new Date()
-    };
-    
-    conversation.messages.push(userMessage);
-    conversation.lastActivity = new Date();
-    this.activeConversationSubject.next({...conversation});
-    
-    // Envoyer la requête au backend
+  getAllConversations(): Observable<Conversation[]> {
+    return this.http.get<Conversation[]>(`${this.apiUrl}/conversations`);
+  }
+
+  /**
+   * Récupère une conversation spécifique
+   */
+  getConversation(conversationId: string): Observable<Conversation> {
+    return this.http.get<Conversation>(`${this.apiUrl}/conversations/${conversationId}`)
+      .pipe(
+        tap(conversation => {
+          this.activeConversationSubject.next(conversation);
+        })
+      );
+  }
+
+  /**
+   * Envoie un message dans une conversation
+   */
+  sendMessage(conversationId: string, message: string): Observable<Message> {
     const request: MessageRequest = {
       prompt: message
     };
     
-    return this.http.post<MessageResponse>(`${this.apiUrl}/${conversation.agentId}/request`, request)
+    return this.http.post<Message>(`${this.apiUrl}/conversations/${conversationId}/send`, request)
       .pipe(
-        tap(response => {
-          // Ajouter la réponse de l'agent à la conversation
-          const agentMessage: Message = {
-            id: uuidv4(),
-            sender: 'agent',
-            content: response.response,
-            timestamp: new Date(response.timestamp)
-          };
-          
-          conversation.messages.push(agentMessage);
-          conversation.lastActivity = new Date();
-          this.activeConversationSubject.next({...conversation});
-        }),
         catchError(error => {
           console.error('Erreur lors de l\'envoi du message:', error);
-          return throwError(() => new Error(error.error?.detail || 'Erreur lors de la communication avec l\'agent'));
+          return throwError(() => new Error(error.error?.detail || 'Erreur lors de l\'envoi du message'));
         })
       );
+  }
+
+  /**
+   * Met à jour le titre d'une conversation
+   */
+  updateConversationTitle(conversationId: string, newTitle: string): Observable<Conversation> {
+    // Utiliser HttpParams pour ce paramètre également
+    const params = new HttpParams().set('new_title', newTitle);
+    return this.http.put<Conversation>(`${this.apiUrl}/conversations/${conversationId}/title`, null, { params });
+  }
+
+  /**
+   * Supprime une conversation
+   */
+  deleteConversation(conversationId: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/conversations/${conversationId}`);
+  }
+
+  /**
+   * Définit la conversation active
+   */
+  setActiveConversation(conversation: Conversation): void {
+    this.activeConversationSubject.next(conversation);
   }
 
   /**
@@ -101,22 +111,10 @@ export class ConversationService {
   }
 
   /**
-   * Récupère toutes les conversations
+   * Démarre une conversation avec un agent prédéfini
    */
-  getAllConversations(): Conversation[] {
-    return Array.from(this.conversations.values());
-  }
-
-  /**
-   * Efface la conversation active
-   */
-  clearActiveConversation(): void {
-    const conversation = this.activeConversationSubject.value;
-    
-    if (conversation) {
-      conversation.messages = [];
-      conversation.lastActivity = new Date();
-      this.activeConversationSubject.next({...conversation});
-    }
+  startConversationWithDefaultAgent(): Observable<Conversation> {
+    // Créer une conversation avec l'agent par défaut
+    return this.createConversation("Nouvelle conversation", "agent-id-par-defaut");
   }
 }

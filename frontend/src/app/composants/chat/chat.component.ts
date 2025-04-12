@@ -1,12 +1,9 @@
 // src/app/composants/chat/chat.component.ts
-import { Component, Input, OnInit, OnDestroy, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Component, Input, OnInit, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Subscription } from 'rxjs';
-
+import { FormsModule } from '@angular/forms';
 import { ConversationService } from '../../services/conversation.service';
-import { Agent } from '../../modeles/agent.model';
-import { Conversation, Message } from '../../modeles/conversation.model';
+import { Message, MessageRole } from '../../modeles/conversation.model';
 import { BoutonComponent } from '../bouton/bouton.component';
 
 @Component({
@@ -14,97 +11,94 @@ import { BoutonComponent } from '../bouton/bouton.component';
   templateUrl: './chat.component.html',
   styleUrls: ['./chat.component.scss'],
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, BoutonComponent]
+  imports: [
+    CommonModule,
+    FormsModule,
+    BoutonComponent
+  ]
 })
-export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
-  @Input() agent!: Agent;
-  @ViewChild('messagesContainer') private messagesContainer!: ElementRef;
-
-  messageForm: FormGroup;
-  conversation: Conversation | null = null;
-  messages: Message[] = [];
-  enChargement: boolean = false;
-  erreurMessage: string = '';
+export class ChatComponent implements OnInit, AfterViewChecked {
+  @Input() conversationId: string = '';
+  @Input() agentName: string = 'Assistant';
   
-  private subscriptions = new Subscription();
-
-  constructor(
-    private fb: FormBuilder,
-    private conversationService: ConversationService
-  ) {
-    this.messageForm = this.fb.group({
-      message: ['', [Validators.required]]
-    });
-  }
-
+  @ViewChild('messagesContainer') messagesContainer!: ElementRef;
+  
+  messages: Message[] = [];
+  newMessageText: string = '';
+  isLoading: boolean = false;
+  error: string = '';
+  
+  // Rendre l'enum accessible au template
+  MessageRole = MessageRole;
+  
+  constructor(private conversationService: ConversationService) {}
+  
   ngOnInit(): void {
-    // Démarrer ou continuer une conversation avec l'agent
-    this.conversationService.startConversation(this.agent);
-    
-    // S'abonner aux changements de la conversation active
-    const conversationSub = this.conversationService.activeConversation$.subscribe(conversation => {
-      this.conversation = conversation;
-      this.messages = conversation?.messages || [];
-    });
-    
-    this.subscriptions.add(conversationSub);
+    this.loadMessages();
   }
-
-  ngOnDestroy(): void {
-    this.subscriptions.unsubscribe();
-  }
-
+  
   ngAfterViewChecked(): void {
     this.scrollToBottom();
   }
-
-  /**
-   * Envoie un message à l'agent
-   */
-  onSubmit(): void {
-    if (this.messageForm.invalid || this.enChargement) {
-      return;
-    }
-
-    const message = this.messageForm.value.message;
-    this.enChargement = true;
-    this.erreurMessage = '';
+  
+  loadMessages(): void {
+    // Chargement des messages depuis le service
+    if (!this.conversationId) return;
     
-    this.conversationService.sendMessage(message).subscribe({
-      next: () => {
-        this.enChargement = false;
-        this.messageForm.reset();
-      },
-      error: (error) => {
-        this.enChargement = false;
-        this.erreurMessage = error.message || 'Erreur lors de l\'envoi du message';
-      }
-    });
+    this.isLoading = true;
+    
+    this.conversationService.getConversation(this.conversationId)
+      .subscribe({
+        next: (conversation) => {
+          this.messages = conversation.messages || [];
+          this.isLoading = false;
+          setTimeout(() => this.scrollToBottom(), 100);
+        },
+        error: (error) => {
+          this.error = "Impossible de charger les messages";
+          this.isLoading = false;
+          console.error("Erreur lors du chargement des messages:", error);
+        }
+      });
   }
-
-  /**
-   * Efface la conversation
-   */
-  clearConversation(): void {
-    this.conversationService.clearActiveConversation();
+  
+  sendMessage(): void {
+    if (!this.newMessageText.trim() || !this.conversationId) return;
+    
+    this.isLoading = true;
+    this.error = '';
+    
+    this.conversationService.sendMessage(this.conversationId, this.newMessageText)
+      .subscribe({
+        next: () => {
+          // Le message est déjà ajouté à la conversation côté serveur
+          // On recharge les messages pour avoir la réponse de l'agent
+          this.loadMessages();
+          this.newMessageText = '';
+        },
+        error: (error) => {
+          this.error = "Erreur lors de l'envoi du message";
+          this.isLoading = false;
+          console.error("Erreur lors de l'envoi du message:", error);
+        }
+      });
   }
-
-  /**
-   * Fait défiler la vue jusqu'au dernier message
-   */
-  private scrollToBottom(): void {
+  
+  scrollToBottom(): void {
     try {
       this.messagesContainer.nativeElement.scrollTop = this.messagesContainer.nativeElement.scrollHeight;
-    } catch (err) {}
+    } catch (err) { }
   }
-
-  /**
-   * Formate la date pour l'affichage
-   */
-  formatDate(date: Date): string {
-    return new Date(date).toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+  
+  getMessageClasses(message: Message): any {
+    return {
+      'user': message.role === MessageRole.USER,
+      'agent': message.role === MessageRole.ASSISTANT
+    };
+  }
+  
+  formatTimestamp(timestamp: string | Date): string {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   }
 }

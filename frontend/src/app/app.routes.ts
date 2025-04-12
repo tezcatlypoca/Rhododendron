@@ -4,6 +4,7 @@ import { ConnexionComponent } from './pages/connexion/connexion.component';
 import { InscriptionComponent } from './pages/inscription/inscription.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { authGuard } from './core/gardes/auth.guard';
+import { ConversationComponent } from './pages/conversation/conversation.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'connexion', pathMatch: 'full' },
@@ -25,8 +26,24 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'conversation/new',
+    component: ConversationComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'conversation/:id',
+    component: ConversationComponent,
+    canActivate: [authGuard]
+  },
+  // Assurez-vous que cette route existe aussi pour la compatibilité
+  {
     path: 'conversations/:id',
-    loadComponent: () => import('./pages/conversation/conversation.component').then(m => m.ConversationComponent),
+    component: ConversationComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'edition-agent/:id',
+    loadComponent: () => import('./pages/agent-edition/agent-edition.component').then(m => m.AgentEditionComponent),
     canActivate: [authGuard]
   },
   { path: '**', redirectTo: 'connexion' }
