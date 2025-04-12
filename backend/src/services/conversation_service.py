@@ -7,12 +7,55 @@ from ..models.dto.conversation_dto import (
     ConversationUpdateDTO,
     ConversationResponseDTO,
     MessageCreateDTO,
-    MessageResponseDTO
+    MessageResponseDTO,
+    MessageRole
 )
+from ..models.dto.agent_dto import AgentRequestDTO
+from fastapi import HTTPException
+from ..services.agent_service import AgentService
 
 class ConversationService:
+    def __init__(self):
+        self._agent_service = AgentService()
+
+    @property
+    def agent_service(self):
+        return self._agent_service
+
+    def get_conversation_by_title(self, title: str, db: Session) -> Optional[ConversationResponseDTO]:
+        """Récupère une conversation par son titre"""
+        conversation = db.query(Conversation).filter(Conversation.title == title).first()
+        if conversation:
+            conversation_dict = {
+                "id": conversation.id,
+                "title": conversation.title,
+                "created_at": conversation.created_at,
+                "updated_at": conversation.updated_at,
+                "agent_id": conversation.agent_id,
+                "metadata": dict(conversation.conversation_metadata or {}),
+                "messages": [
+                    {
+                        "id": msg.id,
+                        "conversation_id": msg.conversation_id,
+                        "role": msg.role,
+                        "content": msg.content,
+                        "timestamp": msg.timestamp,
+                        "agent_id": msg.agent_id,
+                        "metadata": dict(msg.message_metadata or {})
+                    }
+                    for msg in conversation.messages
+                ]
+            }
+            return ConversationResponseDTO.model_validate(conversation_dict)
+        return None
+
     def create_conversation(self, conversation_data: ConversationCreateDTO, db: Session) -> ConversationResponseDTO:
         """Crée une nouvelle conversation"""
+        # Vérifier si une conversation avec le même titre existe déjà
+        existing_conversation = self.get_conversation_by_title(conversation_data.title, db)
+        if existing_conversation:
+            return existing_conversation
+
         conversation = Conversation(
             title=conversation_data.title,
             agent_id=conversation_data.agent_id,
@@ -89,45 +132,111 @@ class ConversationService:
             for conv in conversations
         ]
 
-    def add_message(self, conversation_id: str, message_data: MessageCreateDTO, db: Session) -> Optional[MessageResponseDTO]:
-        """Ajoute un message à une conversation"""
-        try:
-            # Récupérer la conversation pour obtenir son agent_id
-            conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
-            if not conversation:
-                return None
+    def add_message(
+        self,
+        conversation_id: str,
+        message_data: MessageCreateDTO,
+        db: Session
+    ) -> MessageResponseDTO:
+        """
+        Ajoute un message à une conversation.
+        
+        Args:
+            conversation_id: L'ID de la conversation
+            message_data: Les données du message à ajouter
+            db: La session de base de données
+            
+        Returns:
+            Le message créé
+        """
+        # Vérifier si la conversation existe
+        conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation non trouvée")
 
-            # Créer le message
-            message = Message(
+        # Créer le message
+        message = Message(
+            conversation_id=conversation_id,
+            role=message_data.role,
+            content=message_data.content,
+            message_metadata=message_data.metadata
+        )
+
+        # Ajouter le message à la conversation
+        conversation.messages.append(message)
+        conversation.updated_at = datetime.utcnow()
+
+        # Sauvegarder le message
+        db.add(message)
+        db.commit()
+        db.refresh(message)
+
+        # Si c'est un message utilisateur et qu'il y a un agent associé, envoyer la requête à l'agent de manière asynchrone
+        if message.role == "user" and conversation.agent_id:
+            # Utiliser une fonction asynchrone pour gérer la réponse de l'agent
+            import asyncio
+            asyncio.create_task(self._handle_agent_response(conversation_id, conversation.agent_id, message.content, db))
+
+        # Retourner immédiatement le message créé
+        return MessageResponseDTO(
+            id=str(message.id),
+            conversation_id=str(message.conversation_id),
+            role=message.role,
+            content=message.content,
+            timestamp=message.timestamp,
+            metadata=message.message_metadata
+        )
+
+    async def _handle_agent_response(self, conversation_id: str, agent_id: str, user_message: str, db: Session):
+        """Gère la réponse de l'agent de manière asynchrone"""
+        try:
+            # Créer la requête pour l'agent
+            request = AgentRequestDTO(
+                prompt=user_message,
                 conversation_id=conversation_id,
-                role=message_data.role,
-                content=message_data.content,
-                agent_id=conversation.agent_id,  # Utiliser l'agent_id de la conversation
-                message_metadata=message_data.metadata or {}
+                parameters={}
             )
-            
-            db.add(message)
-            db.commit()
-            db.refresh(message)
-            
-            # Mettre à jour la date de modification de la conversation
-            conversation.updated_at = datetime.now()
-            db.commit()
-            
-            return MessageResponseDTO.model_validate({
-                "id": message.id,
-                "conversation_id": message.conversation_id,
-                "role": message.role,
-                "content": message.content,
-                "timestamp": message.timestamp,
-                "agent_id": message.agent_id,
-                "metadata": dict(message.message_metadata or {})
-            })
-            
+
+            # Traiter la requête avec l'agent
+            agent_response = self.agent_service.process_request(
+                agent_id,
+                request,
+                db
+            )
+
+            # Si la réponse est un succès, créer un nouveau message avec la réponse de l'agent
+            if agent_response.status == "success":
+                # Créer une nouvelle session pour la transaction
+                from sqlalchemy.orm import Session
+                new_db = Session(bind=db.get_bind())
+                try:
+                    agent_message = Message(
+                        conversation_id=conversation_id,
+                        role="assistant",
+                        content=agent_response.response,
+                        agent_id=agent_id,
+                        message_metadata={"timestamp": str(agent_response.timestamp)}
+                    )
+
+                    # Ajouter le message de l'agent à la conversation
+                    conversation = new_db.query(Conversation).filter(Conversation.id == conversation_id).first()
+                    if conversation:
+                        conversation.messages.append(agent_message)
+                        conversation.updated_at = datetime.utcnow()
+
+                        # Sauvegarder le message de l'agent
+                        new_db.add(agent_message)
+                        new_db.commit()
+                        new_db.refresh(agent_message)
+                        print(f"Message de l'agent ajouté avec succès à la conversation {conversation_id}")
+                except Exception as e:
+                    new_db.rollback()
+                    print(f"Erreur lors de l'ajout du message de l'agent : {str(e)}")
+                finally:
+                    new_db.close()
+
         except Exception as e:
-            db.rollback()
-            print(f"Erreur lors de l'ajout du message : {str(e)}")
-            raise
+            print(f"Erreur lors du traitement par l'agent : {str(e)}")
 
     def get_messages(self, conversation_id: str, db: Session, limit: Optional[int] = None) -> List[MessageResponseDTO]:
         """Récupère les messages d'une conversation"""
@@ -174,20 +283,58 @@ class ConversationService:
             return True
         return False
 
-    def update_conversation(self, conversation_id: str, conversation_data: ConversationUpdateDTO, db: Session) -> Optional[ConversationResponseDTO]:
-        """Met à jour une conversation"""
+    def update_conversation(self, conversation_id: str, conversation_data: ConversationUpdateDTO, db: Session) -> ConversationResponseDTO:
+        """
+        Met à jour une conversation existante.
+        
+        Args:
+            conversation_id: L'ID de la conversation à mettre à jour
+            conversation_data: Les données de mise à jour
+            db: La session de base de données
+            
+        Returns:
+            La conversation mise à jour
+        """
         conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
         if not conversation:
-            return None
-
+            raise HTTPException(status_code=404, detail="Conversation non trouvée")
+        
+        # Mise à jour des champs
         update_data = conversation_data.model_dump(exclude_unset=True)
-        for key, value in update_data.items():
-            setattr(conversation, key, value)
+        for field, value in update_data.items():
+            if field == 'title':
+                conversation.title = value
+            elif field == 'agent_id':
+                conversation.agent_id = value
+            # Ne pas mettre à jour les métadonnées si elles ne sont pas fournies
         
         conversation.updated_at = datetime.now()
         db.commit()
         db.refresh(conversation)
-        return ConversationResponseDTO.model_validate(conversation)
+        
+        # Création d'un dictionnaire avec les données de la conversation
+        conversation_dict = {
+            "id": conversation.id,
+            "title": conversation.title,
+            "created_at": conversation.created_at,
+            "updated_at": conversation.updated_at,
+            "agent_id": conversation.agent_id,
+            "metadata": dict(conversation.conversation_metadata or {}),
+            "messages": [
+                {
+                    "id": msg.id,
+                    "conversation_id": msg.conversation_id,
+                    "role": msg.role,
+                    "content": msg.content,
+                    "timestamp": msg.timestamp,
+                    "agent_id": msg.agent_id,
+                    "metadata": dict(msg.message_metadata or {})
+                }
+                for msg in conversation.messages
+            ]
+        }
+        
+        return ConversationResponseDTO.model_validate(conversation_dict)
 
     def update_conversation_agent(self, conversation_id: str, agent_id: Optional[str], db: Session) -> Optional[ConversationResponseDTO]:
         """Met à jour l'agent d'une conversation"""
@@ -288,4 +435,24 @@ class ConversationService:
             ]
         }
         
-        return ConversationResponseDTO.model_validate(conversation_dict) 
+        return ConversationResponseDTO.model_validate(conversation_dict)
+
+    def delete_all_conversations(self, db: Session) -> bool:
+        """
+        Supprime toutes les conversations de la base de données.
+        
+        Args:
+            db: La session de base de données
+            
+        Returns:
+            True si la suppression a réussi
+        """
+        try:
+            # Supprimer toutes les conversations (les messages seront supprimés en cascade)
+            db.query(Conversation).delete()
+            db.commit()
+            return True
+        except Exception as e:
+            db.rollback()
+            print(f"Erreur lors de la suppression des conversations : {str(e)}")
+            return False 

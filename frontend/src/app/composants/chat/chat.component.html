@@ -5,15 +5,15 @@
       <div class="spinner"></div>
       <p>Chargement des messages...</p>
     </div>
-    
+
     <div *ngIf="error" class="error-message">
       {{ error }}
     </div>
-    
+
     <div *ngIf="messages.length === 0 && !isLoading && !error" class="empty-conversation">
       <p>Commencez la conversation en envoyant un message à {{ agentName }}...</p>
     </div>
-    
+
     <div *ngFor="let message of messages" class="message" [ngClass]="getMessageClasses(message)">
       <div class="message-content">
         <div class="message-header">
@@ -23,26 +23,26 @@
         <div class="message-text">{{ message.content }}</div>
       </div>
     </div>
-    
+
     <div *ngIf="isLoading && messages.length > 0" class="typing-indicator">
       <div class="typing-dot"></div>
       <div class="typing-dot"></div>
       <div class="typing-dot"></div>
     </div>
   </div>
-  
+
   <div class="message-input-container">
-    <textarea 
-      [(ngModel)]="newMessageText" 
-      placeholder="Tapez votre message..." 
+    <textarea
+      [(ngModel)]="newMessageText"
+      placeholder="Tapez votre message..."
       class="message-input"
-      (keydown.enter)="$event.preventDefault(); sendMessage()"
+      (keydown.enter)="$event.preventDefault(); sendMessage(newMessageText)"
     ></textarea>
-    <app-bouton 
+    <app-bouton
       texte="Envoyer"
       [chargement]="isLoading"
       [desactive]="!newMessageText.trim() || isLoading"
-      (clic)="sendMessage()"
+      (clic)="sendMessage(newMessageText)"
     ></app-bouton>
   </div>
 </div>

@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, List
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
@@ -49,37 +49,58 @@ class AuthService:
         return Token(access_token=access_token)
 
     async def get_current_user(self, token: str) -> User:
-        """Récupère l'utilisateur à partir du token JWT"""
+        """Récupère l'utilisateur actuel à partir du token"""
         try:
             payload = self._decode_token(token)
             email: str = payload.get("sub")
             if email is None:
                 raise ValueError("Token invalide")
-            
             user = await self.user_repository.get_by_email(email)
             if user is None:
                 raise ValueError("Utilisateur non trouvé")
-            
             return user
         except JWTError:
             raise ValueError("Token invalide")
+
+    async def get_all_users(self) -> List[User]:
+        """Récupère tous les utilisateurs"""
+        return await self.user_repository.get_all()
+
+    async def get_user_by_id(self, user_id: str) -> Optional[User]:
+        """Récupère un utilisateur par son ID"""
+        return await self.user_repository.get_by_id(user_id)
+
+    async def update_user(self, user_id: str, user_data: UserCreate) -> Optional[User]:
+        """Met à jour un utilisateur"""
+        user = await self.user_repository.get_by_id(user_id)
+        if not user:
+            return None
+
+        # Vérifier si l'email existe déjà pour un autre utilisateur
+        existing_user = await self.user_repository.get_by_email(user_data.email)
+        if existing_user and existing_user.id != user_id:
+            raise ValueError("Un utilisateur avec cet email existe déjà")
+
+        # Mettre à jour les informations
+        user.username = user_data.username
+        user.email = user_data.email
+        if user_data.password:
+            user._hashed_password = pwd_context.hash(user_data.password)
+
+        return await self.user_repository.save(user)
+
+    async def delete_user(self, user_id: str) -> bool:
+        """Supprime un utilisateur"""
+        return await self.user_repository.delete(user_id)
 
     def _create_access_token(self, data: dict) -> str:
         """Crée un token JWT"""
         to_encode = data.copy()
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         to_encode.update({"exp": expire})
-        encoded_jwt = jwt.encode(
-            to_encode,
-            settings.SECRET_KEY,
-            algorithm=settings.ALGORITHM
-        )
+        encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
         return encoded_jwt
 
     def _decode_token(self, token: str) -> dict:
         """Décode un token JWT"""
-        return jwt.decode(
-            token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
-        ) 
+        return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]) 

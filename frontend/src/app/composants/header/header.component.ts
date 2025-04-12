@@ -29,15 +29,12 @@ export class HeaderComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    // Vérifier l'état d'authentification initial
-    this.estConnecte = this.authService.estConnecte();
-    
     // S'abonner au changement d'état de l'utilisateur
     const authSub = this.authService.utilisateur$.subscribe(utilisateur => {
       this.estConnecte = !!utilisateur;
     });
     this.subscriptions.add(authSub);
-    
+
     // S'abonner aux événements de navigation
     const routerSub = this.router.events
       .pipe(filter(event => event instanceof NavigationEnd))
@@ -46,9 +43,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
         this.verifierAuthentification();
       });
     this.subscriptions.add(routerSub);
-    
-    // Vérifier l'authentification au démarrage
-    this.verifierAuthentification();
   }
 
   ngOnDestroy(): void {
@@ -59,13 +53,6 @@ export class HeaderComponent implements OnInit, OnDestroy {
    * Vérifie l'état d'authentification et charge le profil si nécessaire
    */
   verifierAuthentification(): void {
-    const estConnecte = this.authService.estConnecte();
-    
-    if (estConnecte && !this.estConnecte) {
-      // L'utilisateur est connecté mais l'état local ne le reflète pas
-      this.authService.chargerProfilUtilisateur().subscribe();
-    }
-    
-    this.estConnecte = estConnecte;
+    this.estConnecte = this.authService.estConnecte();
   }
 }

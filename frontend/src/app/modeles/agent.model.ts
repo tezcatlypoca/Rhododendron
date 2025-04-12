@@ -29,14 +29,3 @@ export interface AgentUpdateDTO {
     [key: string]: any;
   };
 }
-
-export interface AgentRequestDTO {
-  prompt: string;
-  parameters?: Record<string, any>;
-}
-
-export interface AgentResponse {
-  status: string;
-  response: string;
-  timestamp: string;
-}

@@ -8,6 +8,7 @@ import { ConversationComponent } from './pages/conversation/conversation.compone
 
 export const routes: Routes = [
   { path: '', redirectTo: 'connexion', pathMatch: 'full' },
+  { path: '*', redirectTo: 'connexion', pathMatch: 'full' },
   { path: 'connexion', component: ConnexionComponent },
   { path: 'inscription', component: InscriptionComponent },
   {
@@ -26,18 +27,7 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
-    path: 'conversation/new',
-    component: ConversationComponent,
-    canActivate: [authGuard]
-  },
-  {
-    path: 'conversation/:id',
-    component: ConversationComponent,
-    canActivate: [authGuard]
-  },
-  // Assurez-vous que cette route existe aussi pour la compatibilité
-  {
-    path: 'conversations/:id',
+    path: 'conversation',
     component: ConversationComponent,
     canActivate: [authGuard]
   },

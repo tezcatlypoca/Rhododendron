@@ -1,120 +1,95 @@
 // src/app/services/conversation.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { tap, catchError, map } from 'rxjs/operators';
-
+import { HttpClient } from '@angular/common/http';
+import { Observable, throwError } from 'rxjs';
+import { catchError, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Conversation, Message, MessageRequest, MessageResponse, MessageRole } from '../modeles/conversation.model';
+import { Conversation, Agent } from '../modeles/conversation.model';
+import { Message } from '../modeles/message.model';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ConversationService {
-  private apiUrl = `${environment.apiUrl}`;
-  
-  // Conversation active
-  private activeConversationSubject = new BehaviorSubject<Conversation | null>(null);
-  activeConversation$ = this.activeConversationSubject.asObservable();
+  private apiUrl = `${environment.apiUrl}/conversations`;
+  private agentsUrl = `${environment.apiUrl}/agents`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient) { }
 
-  /**
-   * Crée une nouvelle conversation
-   */
-  createConversation(title: string, agent_id?: string): Observable<Conversation> {
-    // CORRECTION IMPORTANTE: Utiliser HttpParams pour les paramètres de requête
-    let params = new HttpParams()
-      .set('title', title);
-    
-    if (agent_id) {
-      params = params.set('agent_id', agent_id);
-    }
-    
-    // Notez que le corps est null et les paramètres sont passés via params
-    return this.http.post<Conversation>(`${this.apiUrl}/conversations`, null, { params })
-      .pipe(
-        tap(conversation => {
-          this.activeConversationSubject.next(conversation);
-        }),
-        catchError(error => {
-          console.error('Erreur lors de la création de la conversation:', error);
-          return throwError(() => new Error(error.error?.detail || 'Erreur lors de la création de la conversation'));
-        })
-      );
+  getConversations(): Observable<Conversation[]> {
+    return this.http.get<Conversation[]>(this.apiUrl).pipe(
+      catchError(this.handleError)
+    );
   }
 
-  /**
-   * Récupère toutes les conversations
-   */
-  getAllConversations(): Observable<Conversation[]> {
-    return this.http.get<Conversation[]>(`${this.apiUrl}/conversations`);
+  getConversation(id: string): Observable<Conversation> {
+    return this.http.get<Conversation>(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
   }
 
-  /**
-   * Récupère une conversation spécifique
-   */
-  getConversation(conversationId: string): Observable<Conversation> {
-    return this.http.get<Conversation>(`${this.apiUrl}/conversations/${conversationId}`)
-      .pipe(
-        tap(conversation => {
-          this.activeConversationSubject.next(conversation);
-        })
-      );
+  createConversation(conversationData: any): Observable<Conversation> {
+    return this.http.post<Conversation>(this.apiUrl, conversationData).pipe(
+      catchError(this.handleError)
+    );
   }
 
-  /**
-   * Envoie un message dans une conversation
-   */
-  sendMessage(conversationId: string, message: string): Observable<Message> {
-    const request: MessageRequest = {
-      prompt: message
-    };
-    
-    return this.http.post<Message>(`${this.apiUrl}/conversations/${conversationId}/send`, request)
+  createDefaultConversation(): Observable<Conversation> {
+    // D'abord, chercher un agent assistant existant
+    return this.http.get<Agent[]>(`${this.agentsUrl}?role=assistant`).pipe(
+      switchMap(agents => {
+        if (agents && agents.length > 0) {
+          // Utiliser le premier agent assistant trouvé
+          return this.createConversation({
+            title: "Nouvelle conversation",
+            agent_id: agents[0].id
+          });
+        } else {
+          // Créer un nouvel agent assistant
+          const newAgent = {
+            name: "Assistant par défaut",
+            model_type: "llama",
+            role: "assistant",
+            config: { model: "codellama:7b-instruct-q4_0" }
+          };
+          return this.http.post<Agent>(this.agentsUrl, newAgent).pipe(
+            switchMap(agent => {
+              return this.createConversation({
+                title: "Nouvelle conversation",
+                agent_id: agent.id
+              });
+            })
+          );
+        }
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  updateConversation(id: string, conversationData: any): Observable<Conversation> {
+    return this.http.put<Conversation>(`${this.apiUrl}/${id}`, conversationData).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  deleteConversation(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}`).pipe(
+      catchError(this.handleError)
+    );
+  }
+
+  sendMessage(conversationId: string, messageData: { role: string; content: string; metadata: any }): Observable<Message> {
+    return this.http.post<Message>(`${this.apiUrl}/${conversationId}/messages`, messageData)
       .pipe(
         catchError(error => {
           console.error('Erreur lors de l\'envoi du message:', error);
-          return throwError(() => new Error(error.error?.detail || 'Erreur lors de l\'envoi du message'));
+          return throwError(() => new Error('Erreur lors de l\'envoi du message'));
         })
       );
   }
 
-  /**
-   * Met à jour le titre d'une conversation
-   */
-  updateConversationTitle(conversationId: string, newTitle: string): Observable<Conversation> {
-    // Utiliser HttpParams pour ce paramètre également
-    const params = new HttpParams().set('new_title', newTitle);
-    return this.http.put<Conversation>(`${this.apiUrl}/conversations/${conversationId}/title`, null, { params });
-  }
-
-  /**
-   * Supprime une conversation
-   */
-  deleteConversation(conversationId: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/conversations/${conversationId}`);
-  }
-
-  /**
-   * Définit la conversation active
-   */
-  setActiveConversation(conversation: Conversation): void {
-    this.activeConversationSubject.next(conversation);
-  }
-
-  /**
-   * Récupère la conversation active
-   */
-  getActiveConversation(): Conversation | null {
-    return this.activeConversationSubject.value;
-  }
-
-  /**
-   * Démarre une conversation avec un agent prédéfini
-   */
-  startConversationWithDefaultAgent(): Observable<Conversation> {
-    // Créer une conversation avec l'agent par défaut
-    return this.createConversation("Nouvelle conversation", "agent-id-par-defaut");
+  private handleError(error: any) {
+    console.error('Une erreur est survenue:', error);
+    return throwError(() => new Error('Une erreur est survenue lors de la communication avec le serveur.'));
   }
 }

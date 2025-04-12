@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
-from ..database.models import Agent
+from ..database.models import Agent, Message
 from ..models.dto.agent_dto import (
     AgentCreateDTO,
     AgentUpdateDTO,
@@ -11,19 +11,23 @@ from ..models.dto.agent_dto import (
 from datetime import datetime
 from ..models.dto.conversation_dto import MessageCreateDTO, MessageRole
 from .llm_interface import LLMInterface
-from .conversation_service import ConversationService
+from .conversation_history_service import ConversationHistoryService
 
 class AgentService:
     _instance = None
     _llm_interface = None
-    _conversation_service = None
+    _history_service = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(AgentService, cls).__new__(cls)
             cls._instance._llm_interface = LLMInterface()
-            cls._instance._conversation_service = ConversationService()
+            cls._instance._history_service = ConversationHistoryService()
         return cls._instance
+
+    def __init__(self):
+        # L'initialisation est maintenant dans __new__
+        pass
 
     def create_agent(self, agent_data: AgentCreateDTO, db: Session) -> AgentResponseDTO:
         """Crée un nouvel agent"""
@@ -75,48 +79,62 @@ class AgentService:
         db.commit()
         return True
 
-    def process_request(self, agent_id: str, request: AgentRequestDTO, db: Session) -> Optional[AgentResponseRequestDTO]:
-        """Traite une requête avec un agent"""
-        # Récupérer l'agent
-        agent = self.get_agent(agent_id, db)
-        if not agent or not agent.is_active:
-            return None
-
+    def process_request(self, agent_id: str, request: AgentRequestDTO, db: Session) -> AgentResponseRequestDTO:
+        """
+        Traite une requête pour un agent spécifique.
+        
+        Args:
+            agent_id: L'ID de l'agent
+            request: La requête à traiter
+            db: La session de base de données
+            
+        Returns:
+            La réponse de l'agent
+        """
         try:
-            # Si un ID de conversation est fourni, sauvegarder le message utilisateur
-            if request.conversation_id:
-                user_message = MessageCreateDTO(
-                    role=MessageRole.USER,
-                    content=request.prompt,
-                    metadata=request.parameters
+            print(f"Traitement de la requête pour l'agent {agent_id}")
+            # Récupérer l'agent
+            agent = db.query(Agent).filter(Agent.id == agent_id).first()
+            if not agent:
+                print(f"Agent {agent_id} non trouvé")
+                return AgentResponseRequestDTO(
+                    status="error",
+                    response="Agent non trouvé",
+                    timestamp=datetime.now(),
+                    conversation_id=request.conversation_id,
+                    agent_id=agent_id
                 )
-                self._conversation_service.add_message(request.conversation_id, user_message, db)
 
-            # Préparer le contexte pour le modèle
+            print(f"Agent trouvé : {agent.name}")
+
+            # Récupérer l'historique de la conversation si nécessaire
+            conversation_history = None
+            if request.conversation_id:
+                print(f"Récupération de l'historique pour la conversation {request.conversation_id}")
+                conversation_history = self._history_service.get_conversation_history(
+                    request.conversation_id,
+                    limit=5,
+                    db=db
+                )
+
+            # Préparer le contexte pour le LLM
             context = {
                 "role": agent.role,
                 "model_type": agent.model_type,
-                **(agent.config or {})
+                "parameters": request.parameters or {}
             }
 
-            # Générer la réponse avec le modèle
+            print(f"Génération de la réponse pour le prompt : {request.prompt}")
+            # Générer la réponse avec le LLM
             response = self._llm_interface.generate_response(
                 prompt=request.prompt,
                 context=context,
-                conversation_id=request.conversation_id
+                conversation_history=conversation_history
             )
 
-            # Si un ID de conversation est fourni, sauvegarder la réponse de l'agent
-            if request.conversation_id:
-                assistant_message = MessageCreateDTO(
-                    role=MessageRole.ASSISTANT,
-                    content=response,
-                    agent_id=agent_id,
-                    metadata={"model_type": agent.model_type}
-                )
-                self._conversation_service.add_message(request.conversation_id, assistant_message, db)
+            print(f"Réponse générée avec succès : {response[:100]}...")
 
-            # Retourner la réponse formatée
+            # Retourner la réponse
             return AgentResponseRequestDTO(
                 status="success",
                 response=response,

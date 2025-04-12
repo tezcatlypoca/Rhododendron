@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { Agent, AgentCreateDTO, AgentUpdateDTO, AgentResponse } from '../modeles/agent.model';
+import { Agent, AgentCreateDTO, AgentUpdateDTO } from '../modeles/agent.model';
 
 @Injectable({
   providedIn: 'root'
@@ -39,15 +39,5 @@ export class AgentService {
    */
   updateAgent(id: string, agent: AgentUpdateDTO): Observable<Agent> {
     return this.http.put<Agent>(`${this.apiUrl}/${id}`, agent);
-  }
-
-  /**
-   * Envoie une requête à un agent
-   */
-  sendRequest(agentId: string, prompt: string): Observable<AgentResponse> {
-    return this.http.post<AgentResponse>(`${this.apiUrl}/${agentId}/request`, {
-      prompt,
-      parameters: {}
-    });
   }
 }

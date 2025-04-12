@@ -10,11 +10,16 @@ import { AuthService } from '../../services/auth.service';
 export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  
-  if (authService.estConnecte()) {
+
+  // console.log('Vérification de l\'authentification...');
+  const estConnecte = authService.estConnecte();
+  // console.log('Utilisateur connecté:', estConnecte);
+
+  if (estConnecte) {
     return true;
   }
-  
+
+  console.log('Redirection vers la page de connexion...');
   // Redirection vers la page de connexion
   return router.createUrlTree(['/connexion']);
 };
