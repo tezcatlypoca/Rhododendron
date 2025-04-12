@@ -6,12 +6,16 @@ import { routes } from './app.routes';
 import { authInterceptor } from './core/intercepteurs/auth.interceptor';
 import { AgentService } from './services/agent.service';
 import { ConversationService } from './services/conversation.service';
+import { StateService } from './services/state.service';
+import { WebsocketService } from './services/websocket.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideRouter(routes),
     provideHttpClient(withInterceptors([authInterceptor])),
     AgentService,
-    ConversationService
+    ConversationService,
+    StateService,
+    WebsocketService
   ]
 };

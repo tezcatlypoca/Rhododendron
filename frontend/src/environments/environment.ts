@@ -1,5 +1,6 @@
 // src/environments/environment.ts
 export const environment = {
   production: false,
-  apiUrl: '/api'  // Utilisation du proxy
+  apiUrl: 'http://localhost:8000',
+  wsUrl: 'ws://localhost:8000/ws'
 };

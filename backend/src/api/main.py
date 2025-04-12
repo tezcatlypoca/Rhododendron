@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routes import conversation_routes, agent_routes, user_routes
+from .routes import conversation_routes, agent_routes, user_routes, auth, websocket_routes
 from .config import settings
 
 app = FastAPI(
@@ -50,6 +50,14 @@ app = FastAPI(
     - `GET /users/{user_id}` : Récupère un utilisateur spécifique
     - `PUT /users/{user_id}` : Met à jour un utilisateur
     - `DELETE /users/{user_id}` : Supprime un utilisateur
+    
+    ## WebSockets
+    
+    Communication en temps réel pour les conversations.
+    
+    ### Endpoints disponibles :
+    
+    - `WS /ws` : Endpoint WebSocket pour la communication en temps réel avec les conversations
     """,
     version="1.0.0",
     docs_url="/docs",
@@ -66,10 +74,12 @@ app.add_middleware(
 )
 
 # Inclure les routes
+app.include_router(auth.router, tags=["auth"])
 app.include_router(conversation_routes.router)
 app.include_router(agent_routes.router)
 app.include_router(user_routes.router)
+app.include_router(websocket_routes.router, tags=["websockets"])
 
 @app.get("/")
 async def root():
-    return {"message": "Bienvenue sur l'API Rhododendron"} 
+    return {"message": "Bienvenue sur l'API Rhododendron"}

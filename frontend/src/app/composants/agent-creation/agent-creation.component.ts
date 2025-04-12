@@ -68,6 +68,7 @@ export class AgentCreationComponent {
     this.erreurMessage = '';
     this.succesMessage = '';
 
+    // Ici, model_type est correctement inclus dans les données envoyées
     const agentData: AgentCreateDTO = this.formulaireAgent.value;
 
     this.agentService.createAgent(agentData).subscribe({

@@ -13,6 +13,7 @@ from ..models.dto.conversation_dto import (
 from ..models.dto.agent_dto import AgentRequestDTO
 from fastapi import HTTPException
 from ..services.agent_service import AgentService
+from ..services.websocket_manager import manager  # Import du gestionnaire WebSocket
 
 class ConversationService:
     def __init__(self):
@@ -171,14 +172,8 @@ class ConversationService:
         db.commit()
         db.refresh(message)
 
-        # Si c'est un message utilisateur et qu'il y a un agent associé, envoyer la requête à l'agent de manière asynchrone
-        if message.role == "user" and conversation.agent_id:
-            # Utiliser une fonction asynchrone pour gérer la réponse de l'agent
-            import asyncio
-            asyncio.create_task(self._handle_agent_response(conversation_id, conversation.agent_id, message.content, db))
-
-        # Retourner immédiatement le message créé
-        return MessageResponseDTO(
+        # Créer le DTO de réponse
+        message_response = MessageResponseDTO(
             id=str(message.id),
             conversation_id=str(message.conversation_id),
             role=message.role,
@@ -186,6 +181,18 @@ class ConversationService:
             timestamp=message.timestamp,
             metadata=message.message_metadata
         )
+
+        # Si c'est un message utilisateur et qu'il y a un agent associé, envoyer la requête à l'agent de manière asynchrone
+        if message.role == "user" and conversation.agent_id:
+            # Utiliser une fonction asynchrone pour gérer la réponse de l'agent
+            import asyncio
+            asyncio.create_task(self._handle_agent_response(conversation_id, conversation.agent_id, message.content, db))
+
+        # Diffuser le message aux clients WebSocket abonnés à cette conversation
+        self._broadcast_message_to_clients(message_response)
+
+        # Retourner immédiatement le message créé
+        return message_response
 
     async def _handle_agent_response(self, conversation_id: str, agent_id: str, user_message: str, db: Session):
         """Gère la réponse de l'agent de manière asynchrone"""
@@ -229,6 +236,21 @@ class ConversationService:
                         new_db.commit()
                         new_db.refresh(agent_message)
                         print(f"Message de l'agent ajouté avec succès à la conversation {conversation_id}")
+                        
+                        # Créer le DTO de réponse
+                        message_response = MessageResponseDTO(
+                            id=str(agent_message.id),
+                            conversation_id=str(agent_message.conversation_id),
+                            role=agent_message.role,
+                            content=agent_message.content,
+                            timestamp=agent_message.timestamp,
+                            agent_id=agent_message.agent_id,
+                            metadata=agent_message.message_metadata
+                        )
+                        
+                        # Diffuser le message de l'agent aux clients WebSocket abonnés
+                        self._broadcast_message_to_clients(message_response)
+                        
                 except Exception as e:
                     new_db.rollback()
                     print(f"Erreur lors de l'ajout du message de l'agent : {str(e)}")
@@ -237,6 +259,34 @@ class ConversationService:
 
         except Exception as e:
             print(f"Erreur lors du traitement par l'agent : {str(e)}")
+
+    def _broadcast_message_to_clients(self, message: MessageResponseDTO):
+        """
+        Diffuse un message aux clients WebSocket abonnés à la conversation
+        
+        Args:
+            message: Le message à diffuser
+        """
+        # Convertir le message en format compatible avec WebSocket
+        websocket_message = {
+            "type": "new_message",
+            "payload": {
+                "id": message.id,
+                "conversation_id": message.conversation_id,
+                "role": message.role,
+                "content": message.content,
+                "timestamp": message.timestamp.isoformat() if isinstance(message.timestamp, datetime) else message.timestamp,
+                "agent_id": message.agent_id,
+                "metadata": message.metadata
+            }
+        }
+        
+        # Diffuser aux clients abonnés
+        import asyncio
+        asyncio.create_task(manager.broadcast_to_conversation(
+            websocket_message,
+            message.conversation_id
+        ))
 
     def get_messages(self, conversation_id: str, db: Session, limit: Optional[int] = None) -> List[MessageResponseDTO]:
         """Récupère les messages d'une conversation"""
@@ -455,4 +505,4 @@ class ConversationService:
         except Exception as e:
             db.rollback()
             print(f"Erreur lors de la suppression des conversations : {str(e)}")
-            return False 
+            return False

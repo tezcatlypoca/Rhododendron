@@ -4,7 +4,7 @@ from datetime import datetime
 
 class AgentCreateDTO(BaseModel):
     name: str = Field(..., description="Nom de l'agent")
-    model_type: str = Field(..., description="Type de modèle utilisé par l'agent")
+    model_type: str = Field(..., description="Type de modèle utilisé par l'agent")  
     role: str = Field(default="assistant", description="Rôle de l'agent")
     config: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Configuration de l'agent")
 

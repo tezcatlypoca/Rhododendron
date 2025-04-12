@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional, Dict, Any
-from pydantic import BaseModel
+from typing import List, Optional
 
 from ...database import get_db
 from ...models.dto.agent_dto import (
@@ -25,29 +24,13 @@ router = APIRouter(
 # Création d'une instance du service
 agent_service = AgentService()
 
-class AgentCreate(BaseModel):
-    name: str
-    description: Optional[str] = None
-    role: str = "assistant"
-    config: Optional[Dict[str, Any]] = None
-
-class AgentUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    role: Optional[str] = None
-    config: Optional[Dict[str, Any]] = None
-
-class AgentRequest(BaseModel):
-    message: str
-    metadata: Optional[Dict[str, Any]] = None
-
 @router.post(
     "/",
     response_model=AgentResponseDTO,
     summary="Créer un nouvel agent",
     description="Crée un nouvel agent avec les paramètres spécifiés."
 )
-async def create_agent(agent_data: AgentCreate, db: Session = Depends(get_db)):
+async def create_agent(agent_data: AgentCreateDTO, db: Session = Depends(get_db)):
     """Crée un nouvel agent"""
     return agent_service.create_agent(agent_data, db)
 
@@ -80,7 +63,7 @@ async def get_agent(agent_id: str, db: Session = Depends(get_db)):
     summary="Mettre à jour un agent",
     description="Met à jour les propriétés d'un agent existant."
 )
-async def update_agent(agent_id: str, agent_data: AgentUpdate, db: Session = Depends(get_db)):
+async def update_agent(agent_id: str, agent_data: AgentUpdateDTO, db: Session = Depends(get_db)):
     """Met à jour un agent"""
     agent = agent_service.update_agent(agent_id, agent_data, db)
     if not agent:
@@ -106,4 +89,4 @@ async def delete_agent(agent_id: str, db: Session = Depends(get_db)):
 #     response = agent_service.process_request(agent_id, request_data, db)
 #     if not response:
 #         raise HTTPException(status_code=404, detail="Agent non trouvé ou inactif")
-#     return response 
+#     return response

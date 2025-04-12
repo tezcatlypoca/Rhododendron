@@ -1,5 +1,13 @@
 <!-- src/app/composants/chat/chat.component.html -->
 <div class="chat-container">
+  <div class="chat-header">
+    <h3 class="agent-name">{{ agentName }}</h3>
+    <div class="connection-status" [ngClass]="{'connected': websocketConnected, 'disconnected': !websocketConnected}">
+      <span class="status-dot"></span>
+      <span>{{ websocketConnected ? 'Connecté' : 'Déconnecté' }}</span>
+    </div>
+  </div>
+
   <div class="messages-container" #messagesContainer>
     <div *ngIf="isLoading && messages.length === 0" class="loading-messages">
       <div class="spinner"></div>
@@ -20,7 +28,7 @@
           <span class="message-sender">{{ message.role === MessageRole.USER ? 'Vous' : agentName }}</span>
           <span class="message-time">{{ formatTimestamp(message.timestamp) }}</span>
         </div>
-        <div class="message-text">{{ message.content }}</div>
+        <div class="message-text" [innerHTML]="message.content"></div>
       </div>
     </div>
 

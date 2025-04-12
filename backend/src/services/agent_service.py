@@ -33,7 +33,7 @@ class AgentService:
         """Crée un nouvel agent"""
         db_agent = Agent(
             name=agent_data.name,
-            model_type=agent_data.model_type,
+             model_type=agent_data.model_type,
             role=agent_data.role,
             config=agent_data.config,
             is_active=True  # Par défaut, l'agent est actif
