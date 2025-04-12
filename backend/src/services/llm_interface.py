@@ -1,14 +1,12 @@
 from typing import Dict, Any, Optional
 import os
-import json
-import subprocess
-import tempfile
-import sys
+from ctransformers import AutoModelForCausalLM
 from ..models.conversation import Message, MessageRole
 from ..services.conversation_service import ConversationService
 
 class LLMInterface:
     _instance = None
+    _model = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -16,35 +14,30 @@ class LLMInterface:
         return cls._instance
 
     def __init__(self):
-        self.model_name = "codellama:7b-instruct-q4_0"
+        self.model_name = "codellama-7b-instruct-q4_0"
         self.conversation_service = ConversationService()
         print(f"Interface LLM initialisée avec le modèle {self.model_name}")
         
-        # Configuration pour utiliser le GPU AMD
-        os.environ["OLLAMA_GPU_LAYER"] = "rocm"  # Pour AMD ROCm
-        os.environ["OLLAMA_GPU_DEVICE"] = "0"    # Premier GPU
-        
-        # Vérification que le modèle est installé
-        try:
-            result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, encoding='utf-8')
-            if self.model_name not in result.stdout:
-                print(f"Le modèle {self.model_name} n'est pas installé. Tentative d'installation...")
-                subprocess.run(['ollama', 'pull', self.model_name], check=True, encoding='utf-8')
-                print("Modèle installé avec succès")
-            else:
-                print(f"Modèle {self.model_name} trouvé et prêt à être utilisé")
-                
-            # Vérification de l'utilisation du GPU
-            gpu_info = subprocess.run(['ollama', 'info'], capture_output=True, text=True, encoding='utf-8')
-            print(f"Informations sur le GPU : {gpu_info.stdout}")
+        # Chargement du modèle
+        if self._model is None:
+            # Utilisation du modèle depuis Hugging Face
+            model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
+            model_file = "codellama-7b-instruct.Q4_K_M.gguf"
             
-        except subprocess.CalledProcessError as e:
-            print(f"Erreur lors de la vérification du modèle : {str(e)}")
-            raise
+            print(f"Chargement du modèle depuis Hugging Face : {model_path}")
+            self._model = AutoModelForCausalLM.from_pretrained(
+                model_path,
+                model_file=model_file,
+                model_type="llama",
+                gpu_layers=0,  # Utilisation du CPU uniquement
+                threads=4,  # Nombre de threads pour l'inférence
+                context_length=2048  # Taille du contexte
+            )
+            print("Modèle chargé avec succès")
 
     def generate_response(self, prompt: str, context: Optional[Dict[str, Any]] = None, conversation_id: Optional[str] = None) -> str:
         """
-        Génère une réponse à partir d'un prompt et d'un contexte optionnel en utilisant Ollama en local.
+        Génère une réponse à partir d'un prompt et d'un contexte optionnel en utilisant le modèle local.
         
         Args:
             prompt: Le prompt de l'utilisateur
@@ -59,36 +52,16 @@ class LLMInterface:
         print(f"Prompt complet : {full_prompt}")
         
         try:
-            # Exécution de la commande Ollama en local avec le prompt directement
-            cmd = ['ollama', 'run', self.model_name]
-            print(f"Exécution de la commande : {' '.join(cmd)}")
-            
-            # Utilisation de Popen pour gérer l'entrée/sortie
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding='utf-8'
+            # Génération de la réponse
+            response = self._model(
+                full_prompt,
+                max_new_tokens=1000,
+                temperature=0.7,
+                top_p=0.9,
+                stop=["Utilisateur:", "\n\n"]
             )
             
-            # Envoi du prompt et récupération de la réponse
-            stdout, stderr = process.communicate(input=full_prompt)
-            
-            if process.returncode != 0:
-                raise Exception(f"Erreur lors de l'exécution d'Ollama : {stderr}")
-            
-            response = stdout.strip()
             print(f"Réponse générée : {response[:100]}...")
-
-            # Si une conversation_id est fournie, sauvegarder les messages
-            if conversation_id:
-                user_message = Message(role=MessageRole.USER, content=prompt)
-                assistant_message = Message(role=MessageRole.ASSISTANT, content=response)
-                self.conversation_service.add_message(conversation_id, user_message)
-                self.conversation_service.add_message(conversation_id, assistant_message)
-            
             return response
             
         except Exception as e:

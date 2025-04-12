@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from typing import List, Optional
+from pydantic import BaseModel
 from ...models.conversation import Conversation, Message, MessageRole
 from ...models.dto.agent_dto import AgentRequestDTO, AgentResponseRequestDTO
 from ...services.llm_interface import LLMInterface
@@ -7,47 +8,107 @@ from ...services.conversation_service import ConversationService
 from ...services.agent_service import AgentService
 from datetime import datetime
 
-router = APIRouter()
+router = APIRouter(
+    prefix="/conversations",
+    tags=["conversations"],
+    responses={404: {"description": "Non trouvé"}},
+)
+
 llm_interface = LLMInterface()
 conversation_service = ConversationService()
 agent_service = AgentService()
 
-@router.post("/conversations", response_model=Conversation)
-async def create_conversation(title: str, agent_id: Optional[str] = None):
-    """Crée une nouvelle conversation avec un agent optionnel"""
-    conversation = conversation_service.create_conversation(title)
-    if agent_id:
-        agent = agent_service.get_agent(agent_id)
+class ConversationCreate(BaseModel):
+    title: str
+    agent_id: Optional[str] = None
+
+@router.post("", response_model=Conversation, summary="Créer une nouvelle conversation")
+async def create_conversation(conversation: ConversationCreate):
+    """
+    Crée une nouvelle conversation avec un titre et un agent optionnel.
+    
+    Args:
+        conversation (ConversationCreate): Les données de la conversation à créer
+        
+    Returns:
+        Conversation: La conversation créée
+        
+    Raises:
+        HTTPException: Si l'agent spécifié n'existe pas
+    """
+    new_conversation = conversation_service.create_conversation(conversation.title)
+    if conversation.agent_id:
+        agent = agent_service.get_agent(conversation.agent_id)
         if not agent:
             raise HTTPException(status_code=404, detail="Agent non trouvé")
-        conversation.agent_id = agent_id
-        conversation_service._save_conversation(conversation)
-    return conversation
+        new_conversation.agent_id = conversation.agent_id
+        conversation_service._save_conversation(new_conversation)
+    return new_conversation
 
-@router.get("/conversations", response_model=List[Conversation])
+@router.get("", response_model=List[Conversation], summary="Lister toutes les conversations")
 async def get_all_conversations():
-    """Récupère toutes les conversations"""
+    """
+    Récupère la liste de toutes les conversations existantes.
+    
+    Returns:
+        List[Conversation]: Liste des conversations
+    """
     return conversation_service.get_all_conversations()
 
-@router.get("/conversations/{conversation_id}", response_model=Conversation)
+@router.get("/{conversation_id}", response_model=Conversation, summary="Obtenir une conversation")
 async def get_conversation(conversation_id: str):
-    """Récupère une conversation spécifique"""
+    """
+    Récupère les détails d'une conversation spécifique.
+    
+    Args:
+        conversation_id (str): L'ID de la conversation à récupérer
+        
+    Returns:
+        Conversation: Les détails de la conversation
+        
+    Raises:
+        HTTPException: Si la conversation n'existe pas
+    """
     conversation = conversation_service.get_conversation(conversation_id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation non trouvée")
     return conversation
 
-@router.get("/conversations/{conversation_id}/messages", response_model=List[Message])
+@router.get("/{conversation_id}/messages", response_model=List[Message], summary="Obtenir les messages d'une conversation")
 async def get_conversation_messages(conversation_id: str, limit: Optional[int] = None):
-    """Récupère les messages d'une conversation"""
+    """
+    Récupère les messages d'une conversation, avec une limite optionnelle.
+    
+    Args:
+        conversation_id (str): L'ID de la conversation
+        limit (Optional[int]): Nombre maximum de messages à récupérer
+        
+    Returns:
+        List[Message]: Liste des messages de la conversation
+        
+    Raises:
+        HTTPException: Si la conversation n'existe pas ou ne contient pas de messages
+    """
     messages = conversation_service.get_messages(conversation_id, limit)
     if not messages:
         raise HTTPException(status_code=404, detail="Aucun message trouvé")
     return messages
 
-@router.post("/conversations/{conversation_id}/messages", response_model=Message)
+@router.post("/{conversation_id}/messages", response_model=Message, summary="Ajouter un message")
 async def add_message(conversation_id: str, message: Message):
-    """Ajoute un message à une conversation"""
+    """
+    Ajoute un nouveau message à une conversation existante.
+    
+    Args:
+        conversation_id (str): L'ID de la conversation
+        message (Message): Le message à ajouter
+        
+    Returns:
+        Message: Le message ajouté
+        
+    Raises:
+        HTTPException: Si la conversation n'existe pas ou si l'ajout échoue
+    """
     conversation = conversation_service.get_conversation(conversation_id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation non trouvée")
@@ -58,9 +119,21 @@ async def add_message(conversation_id: str, message: Message):
     
     return message
 
-@router.post("/conversations/{conversation_id}/send", response_model=Message)
+@router.post("/{conversation_id}/send", response_model=Message, summary="Envoyer un message et obtenir une réponse")
 async def send_message(conversation_id: str, request: AgentRequestDTO):
-    """Envoie un message dans une conversation et obtient la réponse de l'agent"""
+    """
+    Envoie un message dans une conversation et obtient la réponse de l'agent associé.
+    
+    Args:
+        conversation_id (str): L'ID de la conversation
+        request (AgentRequestDTO): Le message à envoyer
+        
+    Returns:
+        Message: La réponse de l'agent
+        
+    Raises:
+        HTTPException: Si la conversation n'existe pas, n'a pas d'agent associé, ou si l'agent n'existe pas
+    """
     conversation = conversation_service.get_conversation(conversation_id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation non trouvée")
@@ -101,9 +174,21 @@ async def send_message(conversation_id: str, request: AgentRequestDTO):
     
     return agent_message
 
-@router.delete("/conversations/{conversation_id}/messages/{message_id}")
+@router.delete("/{conversation_id}/messages/{message_id}", summary="Supprimer un message")
 async def delete_message(conversation_id: str, message_id: str):
-    """Supprime un message d'une conversation"""
+    """
+    Supprime un message spécifique d'une conversation.
+    
+    Args:
+        conversation_id (str): L'ID de la conversation
+        message_id (str): L'ID du message à supprimer
+        
+    Returns:
+        dict: Statut de la suppression
+        
+    Raises:
+        HTTPException: Si la conversation ou le message n'existe pas
+    """
     conversation = conversation_service.get_conversation(conversation_id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation non trouvée")
@@ -123,17 +208,41 @@ async def delete_message(conversation_id: str, message_id: str):
     
     return {"status": "success", "message": "Message supprimé"}
 
-@router.put("/conversations/{conversation_id}/title", response_model=Conversation)
+@router.put("/{conversation_id}/title", response_model=Conversation, summary="Mettre à jour le titre")
 async def update_conversation_title(conversation_id: str, new_title: str):
-    """Met à jour le titre d'une conversation"""
+    """
+    Met à jour le titre d'une conversation existante.
+    
+    Args:
+        conversation_id (str): L'ID de la conversation
+        new_title (str): Le nouveau titre
+        
+    Returns:
+        Conversation: La conversation mise à jour
+        
+    Raises:
+        HTTPException: Si la conversation n'existe pas
+    """
     conversation = conversation_service.update_conversation_title(conversation_id, new_title)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation non trouvée")
     return conversation
 
-@router.put("/conversations/{conversation_id}/agent", response_model=Conversation)
+@router.put("/{conversation_id}/agent", response_model=Conversation, summary="Mettre à jour l'agent")
 async def update_conversation_agent(conversation_id: str, agent_id: str):
-    """Met à jour l'agent associé à une conversation"""
+    """
+    Change l'agent associé à une conversation.
+    
+    Args:
+        conversation_id (str): L'ID de la conversation
+        agent_id (str): L'ID du nouvel agent
+        
+    Returns:
+        Conversation: La conversation mise à jour
+        
+    Raises:
+        HTTPException: Si la conversation ou l'agent n'existe pas
+    """
     conversation = conversation_service.get_conversation(conversation_id)
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation non trouvée")
@@ -146,9 +255,20 @@ async def update_conversation_agent(conversation_id: str, agent_id: str):
     conversation_service._save_conversation(conversation)
     return conversation
 
-@router.delete("/conversations/{conversation_id}")
+@router.delete("/{conversation_id}", summary="Supprimer une conversation")
 async def delete_conversation(conversation_id: str):
-    """Supprime une conversation"""
+    """
+    Supprime une conversation et tous ses messages.
+    
+    Args:
+        conversation_id (str): L'ID de la conversation à supprimer
+        
+    Returns:
+        dict: Statut de la suppression
+        
+    Raises:
+        HTTPException: Si la conversation n'existe pas
+    """
     success = conversation_service.delete_conversation(conversation_id)
     if not success:
         raise HTTPException(status_code=404, detail="Conversation non trouvée")

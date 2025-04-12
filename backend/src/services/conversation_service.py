@@ -7,7 +7,7 @@ from ..models.conversation import Conversation, Message, MessageRole
 class ConversationService:
     _instance = None
     _conversations: Dict[str, Conversation] = {}
-    _storage_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "conversations")
+    _data_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "conversations")
 
     def __new__(cls):
         if cls._instance is None:
@@ -16,32 +16,45 @@ class ConversationService:
         return cls._instance
 
     def _load_conversations(self):
-        """Charge les conversations depuis le stockage"""
-        if not os.path.exists(self._storage_path):
-            os.makedirs(self._storage_path)
+        """Charge toutes les conversations depuis les fichiers JSON"""
+        if not os.path.exists(self._data_dir):
+            os.makedirs(self._data_dir)
             return
 
-        for filename in os.listdir(self._storage_path):
-            if filename.endswith('.json'):
-                with open(os.path.join(self._storage_path, filename), 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    conversation = Conversation(**data)
-                    self._conversations[conversation.id] = conversation
+        for filename in os.listdir(self._data_dir):
+            if filename.endswith(".json"):
+                try:
+                    with open(os.path.join(self._data_dir, filename), "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        # Convertir les chaînes ISO en datetime
+                        if "created_at" in data:
+                            data["created_at"] = datetime.fromisoformat(data["created_at"])
+                        if "updated_at" in data:
+                            data["updated_at"] = datetime.fromisoformat(data["updated_at"])
+                        if "messages" in data:
+                            for message in data["messages"]:
+                                if "timestamp" in message:
+                                    message["timestamp"] = datetime.fromisoformat(message["timestamp"])
+                        conversation = Conversation(**data)
+                        self._conversations[conversation.id] = conversation
+                except (json.JSONDecodeError, KeyError, ValueError) as e:
+                    print(f"Erreur lors du chargement de {filename}: {str(e)}")
+                    # Si le fichier est corrompu, on le supprime
+                    os.remove(os.path.join(self._data_dir, filename))
 
     def _save_conversation(self, conversation: Conversation):
-        """Sauvegarde une conversation dans le stockage"""
-        if not os.path.exists(self._storage_path):
-            os.makedirs(self._storage_path)
+        """Sauvegarde une conversation dans un fichier JSON"""
+        if not os.path.exists(self._data_dir):
+            os.makedirs(self._data_dir)
 
-        filepath = os.path.join(self._storage_path, f"{conversation.id}.json")
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(conversation.dict(), f, ensure_ascii=False, indent=2)
+        file_path = os.path.join(self._data_dir, f"{conversation.id}.json")
+        with open(file_path, "w", encoding="utf-8") as f:
+            # Utiliser model_dump_json pour la sérialisation
+            f.write(conversation.model_dump_json(indent=2))
 
-    def create_conversation(self, title: str, initial_message: Optional[Message] = None) -> Conversation:
+    def create_conversation(self, title: str) -> Conversation:
         """Crée une nouvelle conversation"""
         conversation = Conversation(title=title)
-        if initial_message:
-            conversation.add_message(initial_message)
         self._conversations[conversation.id] = conversation
         self._save_conversation(conversation)
         return conversation
@@ -65,17 +78,18 @@ class ConversationService:
     def get_messages(self, conversation_id: str, limit: Optional[int] = None) -> List[Message]:
         """Récupère les messages d'une conversation"""
         conversation = self.get_conversation(conversation_id)
-        if not conversation:
-            return []
-        return conversation.get_last_messages(limit) if limit else conversation.messages
+        if conversation:
+            return conversation.get_last_messages(limit)
+        return []
 
     def delete_conversation(self, conversation_id: str) -> bool:
         """Supprime une conversation"""
-        if conversation_id in self._conversations:
+        conversation = self.get_conversation(conversation_id)
+        if conversation:
+            file_path = os.path.join(self._data_dir, f"{conversation_id}.json")
+            if os.path.exists(file_path):
+                os.remove(file_path)
             del self._conversations[conversation_id]
-            filepath = os.path.join(self._storage_path, f"{conversation_id}.json")
-            if os.path.exists(filepath):
-                os.remove(filepath)
             return True
         return False
 
@@ -84,6 +98,5 @@ class ConversationService:
         conversation = self.get_conversation(conversation_id)
         if conversation:
             conversation.title = new_title
-            conversation.updated_at = datetime.now()
             self._save_conversation(conversation)
         return conversation 

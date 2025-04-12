@@ -1,8 +1,8 @@
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from enum import Enum
-import uuid
+from uuid import uuid4
 
 class MessageRole(str, Enum):
     USER = "user"
@@ -10,31 +10,45 @@ class MessageRole(str, Enum):
     SYSTEM = "system"
 
 class Message(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    id: str = Field(default_factory=lambda: str(uuid4()))
     role: MessageRole
     content: str
     timestamp: datetime = Field(default_factory=datetime.now)
     agent_id: Optional[str] = None  # ID de l'agent qui a généré la réponse
     metadata: Optional[dict] = None
 
+    model_config = ConfigDict(
+        json_encoders={
+            datetime: lambda v: v.isoformat()
+        }
+    )
+
 class Conversation(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    id: str = Field(default_factory=lambda: str(uuid4()))
     title: str
+    messages: List[Message] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
-    messages: List[Message] = []
-    participants: List[str] = []  # Liste des IDs des participants
+    participants: List[str] = Field(default_factory=list)  # Liste des IDs des participants
     agent_id: Optional[str] = None  # ID de l'agent associé à la conversation
     metadata: Optional[dict] = None
+
+    model_config = ConfigDict(
+        json_encoders={
+            datetime: lambda v: v.isoformat()
+        }
+    )
 
     def add_message(self, message: Message) -> None:
         """Ajoute un message à la conversation et met à jour la date de modification"""
         self.messages.append(message)
         self.updated_at = datetime.now()
 
-    def get_last_messages(self, n: int = 10) -> List[Message]:
-        """Récupère les n derniers messages de la conversation"""
-        return self.messages[-n:]
+    def get_last_messages(self, limit: Optional[int] = None) -> List[Message]:
+        """Récupère les derniers messages de la conversation"""
+        if limit is None:
+            return self.messages
+        return self.messages[-limit:]
 
     def get_messages_by_role(self, role: MessageRole) -> List[Message]:
         """Récupère tous les messages d'un rôle spécifique"""
