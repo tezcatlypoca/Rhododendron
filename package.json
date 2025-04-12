@@ -1,5 +1,9 @@
 {
   "dependencies": {
-    "@angular/router": "^19.2.6"
+    "@angular/router": "^19.2.6",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "^10.0.0"
   }
 }

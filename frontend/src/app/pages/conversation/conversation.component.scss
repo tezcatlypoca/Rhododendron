@@ -1,0 +1,111 @@
+/* src/app/pages/conversation/conversation.component.scss */
+.conversation-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    height: calc(100vh - 140px); /* Ajuster pour le header et footer */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .conversation-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+    
+    .back-button {
+      display: flex;
+      align-items: center;
+      background: none;
+      border: none;
+      color: var(--couleur-primaire, #4a8fee);
+      font-size: 0.9rem;
+      padding: 0.5rem;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+      
+      &:hover {
+        background-color: rgba(74, 143, 238, 0.1);
+      }
+      
+      .material-icons {
+        font-size: 1.1rem;
+        margin-right: 0.25rem;
+      }
+    }
+    
+    .page-title {
+      font-size: 1.5rem;
+      color: var(--couleur-texte, #333);
+      margin: 0;
+      flex: 1;
+    }
+  }
+  
+  .loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+      border-top-color: var(--couleur-primaire, #4a8fee);
+      animation: spin 1s ease-in-out infinite;
+      margin-bottom: 1rem;
+    }
+    
+    p {
+      color: var(--couleur-texte-secondaire, #666);
+    }
+  }
+  
+  .error-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    gap: 1.5rem;
+    
+    .error-message {
+      background-color: #fee;
+      color: #e53935;
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+      width: 100%;
+      max-width: 400px;
+    }
+  }
+  
+  .chat-wrapper {
+    flex: 1;
+    min-height: 0; /* Important pour que le flex: 1 fonctionne correctement */
+  }
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+  
+  @media (max-width: 768px) {
+    .conversation-container {
+      padding: 1rem;
+      height: calc(100vh - 120px);
+    }
+    
+    .conversation-header {
+      margin-bottom: 1rem;
+      
+      .page-title {
+        font-size: 1.3rem;
+      }
+    }
+  }

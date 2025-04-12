@@ -24,5 +24,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/agent-gestion/agent-gestion.component').then(m => m.AgentGestionComponent),
     canActivate: [authGuard]
   },
+  {
+    path: 'conversations/:id',
+    loadComponent: () => import('./pages/conversation/conversation.component').then(m => m.ConversationComponent),
+    canActivate: [authGuard]
+  },
   { path: '**', redirectTo: 'connexion' }
 ];

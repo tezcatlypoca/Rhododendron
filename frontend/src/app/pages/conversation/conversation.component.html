@@ -1,0 +1,30 @@
+<!-- src/app/pages/conversation/conversation.component.html -->
+<div class="conversation-container">
+    <div class="conversation-header">
+      <button class="back-button" (click)="retourListe()">
+        <span class="material-icons">arrow_back</span>
+        Retour à la liste des agents
+      </button>
+      <h1 class="page-title">Conversation avec un agent</h1>
+    </div>
+  
+    <div *ngIf="enChargement" class="loading-container">
+      <div class="spinner"></div>
+      <p>Chargement de l'agent...</p>
+    </div>
+  
+    <div *ngIf="erreurMessage" class="error-container">
+      <div class="error-message">
+        {{ erreurMessage }}
+      </div>
+      <app-bouton
+        texte="Retour à la liste des agents"
+        variante="secondaire"
+        (clic)="retourListe()"
+      ></app-bouton>
+    </div>
+  
+    <div *ngIf="!enChargement && !erreurMessage && agent" class="chat-wrapper">
+      <app-chat [agent]="agent"></app-chat>
+    </div>
+  </div>

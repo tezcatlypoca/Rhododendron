@@ -1,6 +1,7 @@
 // src/app/composants/agent-liste/agent-liste.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { AgentService } from '../../services/agent.service';
 import { Agent } from '../../modeles/agent.model';
 import { Subscription } from 'rxjs';
@@ -13,6 +14,7 @@ import { BoutonComponent } from '../bouton/bouton.component';
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     BoutonComponent
   ]
 })
