@@ -1,0 +1,71 @@
+<!-- src/app/composants/agent-liste/agent-liste.component.html -->
+<div class="agent-liste-container">
+  <div class="liste-header">
+    <h2 class="title">Agents disponibles</h2>
+    <app-bouton 
+      texte="Rafraîchir" 
+      variante="secondaire" 
+      [chargement]="enChargement"
+      (clic)="chargerAgents()">
+    </app-bouton>
+  </div>
+  
+  <div *ngIf="erreurMessage" class="alerte-erreur">
+    {{ erreurMessage }}
+  </div>
+  
+  <div *ngIf="enChargement" class="chargement-conteneur">
+    <div class="spinner"></div>
+    <p>Chargement des agents...</p>
+  </div>
+  
+  <div *ngIf="!enChargement && agents.length === 0" class="aucun-agent">
+    <p>Aucun agent disponible. Créez votre premier agent!</p>
+  </div>
+  
+  <div *ngIf="!enChargement && agents.length > 0" class="agents-grid">
+    <div *ngFor="let agent of agents" 
+         class="agent-card" 
+         [class.expanded]="agentSelectionneId === agent.id"
+         (click)="selectionnerAgent(agent)">
+      <div class="agent-header">
+        <div class="agent-name-container">
+          <h3 class="agent-name">{{ agent.name }}</h3>
+          <span class="agent-model">{{ agent.model_type }}</span>
+        </div>
+        <div class="agent-status" 
+             [class.active]="agent.is_active"
+             [class.inactive]="!agent.is_active"
+             (click)="toggleAgentActivation(agent, $event)">
+          {{ agent.is_active ? 'Actif' : 'Inactif' }}
+        </div>
+      </div>
+      
+      <div class="agent-info">
+        <div class="info-item">
+          <span class="info-label">Créé le:</span>
+          <span class="info-value">{{ formatDate(agent.created_at) }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">Dernière utilisation:</span>
+          <span class="info-value">{{ agent.last_used ? formatDate(agent.last_used) : 'Jamais utilisé' }}</span>
+        </div>
+      </div>
+      
+      <div *ngIf="agentSelectionneId === agent.id" class="agent-details">
+        <h4 class="details-title">Configuration</h4>
+        <div class="config-item" *ngFor="let item of agent.config | keyvalue">
+          <span class="config-label">{{ item.key }}:</span>
+          <span class="config-value">{{ item.value }}</span>
+        </div>
+      </div>
+      
+      <div class="agent-actions">
+        <a [routerLink]="['/conversations', agent.id]" class="conversation-button">
+          <span class="material-icons">chat</span>
+          Converser
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

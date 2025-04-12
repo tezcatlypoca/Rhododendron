@@ -1,0 +1,59 @@
+<!-- src/app/composants/chat/chat.component.html -->
+<div class="chat-container">
+    <div class="chat-header">
+      <h2 class="agent-name">{{ agent.name }}</h2>
+      <div class="agent-info">
+        <span class="agent-model">{{ agent.model_type }}</span>
+        <span class="agent-status" [class.active]="agent.is_active">
+          {{ agent.is_active ? 'Actif' : 'Inactif' }}
+        </span>
+      </div>
+      <button class="clear-button" (click)="clearConversation()">
+        <span class="material-icons">delete_sweep</span>
+        Effacer
+      </button>
+    </div>
+  
+    <div #messagesContainer class="messages-container">
+      <div *ngIf="messages.length === 0" class="empty-chat">
+        <p>Commencez une conversation avec cet agent.</p>
+      </div>
+      
+      <div *ngFor="let message of messages" 
+           class="message" 
+           [ngClass]="message.sender">
+        <div class="message-content">
+          <span class="message-text">{{ message.content }}</span>
+          <span class="message-time">{{ formatDate(message.timestamp) }}</span>
+        </div>
+      </div>
+      
+      <div *ngIf="enChargement" class="loading-message">
+        <div class="loading-dots">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+    </div>
+  
+    <div *ngIf="erreurMessage" class="error-message">
+      {{ erreurMessage }}
+    </div>
+  
+    <form [formGroup]="messageForm" (ngSubmit)="onSubmit()" class="message-form">
+      <input
+        type="text"
+        formControlName="message"
+        placeholder="Tapez votre message..."
+        class="message-input"
+        [disabled]="enChargement"
+      />
+      <app-bouton
+        texte="Envoyer"
+        type="submit"
+        [chargement]="enChargement"
+        [desactive]="messageForm.invalid || enChargement"
+      ></app-bouton>
+    </form>
+  </div>

@@ -1,0 +1,89 @@
+/* src/app/composants/agent-creation/agent-creation.component.scss */
+.agent-creation-container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  
+  .title {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    color: var(--couleur-texte, #333);
+  }
+  
+  .alerte-succes {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .alerte-erreur {
+    background-color: #fee;
+    color: #e53935;
+    padding: 0.75rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+  }
+  
+  .champ-select {
+    margin-bottom: 1rem;
+  }
+  
+  .champ-label {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    display: block;
+  }
+  
+  .select-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 20 20'%3E%3Cpath fill='%23333' d='M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.7rem top 50%;
+    background-size: 0.8rem auto;
+    
+    &:focus {
+      outline: none;
+      border-color: #4a8fee;
+      box-shadow: 0 0 0 2px rgba(74, 143, 238, 0.1);
+    }
+  }
+  
+  .config-section {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+  }
+  
+  .config-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    color: var(--couleur-texte, #333);
+  }
+  
+  .actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .messages-erreur {
+    margin-top: 0.5rem;
+  }
+  
+  .message-erreur {
+    color: #e53935;
+    font-size: 0.8rem;
+    margin: 0.2rem 0;
+  }

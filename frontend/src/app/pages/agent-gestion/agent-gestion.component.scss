@@ -1,0 +1,24 @@
+/* src/app/pages/agent-gestion/agent-gestion.component.scss */
+.gestion-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+  
+  .gestion-header {
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+  
+  .page-title {
+    font-size: 2rem;
+    color: var(--couleur-texte, #333);
+    margin-bottom: 0.5rem;
+  }
+  
+  .page-description {
+    font-size: 1.1rem;
+    color: var(--couleur-texte-secondaire, #666);
+    max-width: 600px;
+    margin: 0 auto;
+  }

@@ -1,0 +1,61 @@
+<!-- src/app/composants/agent-creation/agent-creation.component.html -->
+<div class="agent-creation-container">
+    <h2 class="title">Créer un nouvel agent</h2>
+    
+    <div *ngIf="succesMessage" class="alerte-succes">
+      {{ succesMessage }}
+    </div>
+    
+    <div *ngIf="erreurMessage" class="alerte-erreur">
+      {{ erreurMessage }}
+    </div>
+    
+    <form [formGroup]="formulaireAgent" (ngSubmit)="onSubmit()">
+      <app-champ-formulaire
+        label="Nom de l'agent"
+        type="text"
+        placeholder="Entrez un nom pour votre agent"
+        [control]="formulaireAgent.get('name')!"
+        [erreurMessages]="messagesErreur.name"
+      ></app-champ-formulaire>
+      
+      <div class="champ-select">
+        <label class="champ-label">Type de modèle</label>
+        <select formControlName="model_type" class="select-input">
+          <option *ngFor="let type of modelTypes" [value]="type">{{ type }}</option>
+        </select>
+        <div *ngIf="formulaireAgent.get('model_type')?.invalid && formulaireAgent.get('model_type')?.touched" class="messages-erreur">
+          <p class="message-erreur">{{ messagesErreur.model_type.required }}</p>
+        </div>
+      </div>
+      
+      <div formGroupName="config" class="config-section">
+        <h3 class="config-title">Configuration</h3>
+        
+        <div class="champ-select">
+          <label class="champ-label">Rôle de l'agent</label>
+          <select formControlName="role" class="select-input">
+            <option value="assistant">Assistant</option>
+            <option value="analyzer">Analyseur</option>
+            <option value="coder">Programmeur</option>
+            <option value="writer">Rédacteur</option>
+          </select>
+        </div>
+        
+        <app-champ-formulaire
+          label="Personnalité (optionnel)"
+          type="text"
+          placeholder="Décrivez la personnalité de l'agent"
+          [control]="formulaireAgent.get('config.personality')!"
+        ></app-champ-formulaire>
+      </div>
+      
+      <div class="actions">
+        <app-bouton
+          texte="Créer l'agent"
+          type="submit"
+          [chargement]="enChargement"
+        ></app-bouton>
+      </div>
+    </form>
+  </div>

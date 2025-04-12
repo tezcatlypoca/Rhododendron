@@ -1,10 +1,17 @@
+import os
+import sys
+
+# Ajout du dossier backend au PYTHONPATH
+backend_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(backend_path)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 
-from .api.routes import auth
-from .core.config import settings
+from src.api.routes import auth, agent_routes
+from src.core.config import settings
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -24,6 +31,7 @@ app.add_middleware(
 
 # Inclusion des routes
 app.include_router(auth.router)
+app.include_router(agent_routes.router)
 
 @app.get("/")
 async def root():
@@ -44,7 +52,24 @@ def custom_openapi():
     openapi_schema = get_openapi(
         title=settings.APP_NAME,
         version="1.0.0",
-        description="API d'authentification pour Rhododendron",
+        description="""
+        API Rhododendron - Documentation complète
+
+        ## Routes d'authentification
+        - Gestion des utilisateurs et des sessions
+
+        ## Routes des agents
+        - Création et gestion des agents IA
+        - Traitement des requêtes par les agents
+        - Configuration et personnalisation des agents
+
+        ### Endpoints disponibles :
+        - `POST /agents/` : Créer un nouvel agent
+        - `GET /agents/` : Lister tous les agents
+        - `GET /agents/{id}` : Récupérer un agent spécifique
+        - `PUT /agents/{id}` : Mettre à jour un agent
+        - `POST /agents/{id}/request` : Envoyer une requête à un agent
+        """,
         routes=app.routes,
     )
     app.openapi_schema = openapi_schema
