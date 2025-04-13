@@ -1,0 +1,44 @@
+# Core dependencies
+fastapi==0.109.2
+uvicorn==0.27.1
+python-multipart==0.0.9
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+sqlalchemy==2.0.27
+alembic==1.13.1
+pydantic==2.6.1
+pydantic-settings==2.1.0
+python-dotenv==1.0.1
+
+# LLM and GPU dependencies
+torch==2.2.0+rocm5.7  # PyTorch with ROCm support
+ctransformers==0.2.27  # For GGUF model support
+sentencepiece==0.1.99  # For tokenization
+protobuf==4.25.2  # Required by some ML libraries
+
+# WebSocket support
+websockets==12.0
+starlette==0.36.3
+
+# Database
+psycopg2-binary==2.9.9  # PostgreSQL adapter
+
+# Development tools
+black==24.1.1
+pytest==8.0.0
+pytest-asyncio==0.23.5
+pytest-cov==4.1.0
+
+# Monitoring and logging
+prometheus-client==0.19.0
+python-json-logger==2.0.7
+
+# Optional: For model quantization and optimization
+bitsandbytes==0.42.0  # For 8-bit quantization
+accelerate==0.27.2  # For distributed training
+
+# Note: Install ROCm drivers and libraries separately:
+# sudo apt-get install rocm-opencl-runtime
+# sudo apt-get install rocm-opencl-dev
+# sudo apt-get install rocm-hip-runtime
+# sudo apt-get install rocm-hip-dev 

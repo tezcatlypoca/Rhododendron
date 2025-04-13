@@ -1,5 +1,6 @@
 from typing import List, Dict, Any, Optional
 import os
+import torch
 from ctransformers import AutoModelForCausalLM
 from ..models.domain.conversation import Message, MessageRole
 
@@ -14,22 +15,52 @@ class LLMInterface:
             cls._instance.model_name = "codellama-7b-instruct-q4_0"
             print(f"Interface LLM initialisée avec le modèle {cls._instance.model_name}")
             
-            # Chargement du modèle
-            if cls._instance._model is None:
-                # Utilisation du modèle depuis Hugging Face
-                model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
-                model_file = "codellama-7b-instruct.Q4_K_M.gguf"
+            # Vérification de la disponibilité des GPU
+            if torch.cuda.is_available():
+                num_gpus = torch.cuda.device_count()
+                print(f"Nombre de GPU disponibles : {num_gpus}")
                 
-                print(f"Chargement du modèle depuis Hugging Face : {model_path}")
-                cls._instance._model = AutoModelForCausalLM.from_pretrained(
-                    model_path,
-                    model_file=model_file,
-                    model_type="llama",
-                    gpu_layers=0,  # Utilisation du CPU uniquement
-                    threads=4,  # Nombre de threads pour l'inférence
-                    context_length=2048  # Taille du contexte
-                )
-                print("Modèle chargé avec succès")
+                # Configuration pour les GPU AMD
+                os.environ["HIP_VISIBLE_DEVICES"] = "0,1"  # Utiliser les deux GPU
+                os.environ["HSA_OVERRIDE_GFX_VERSION"] = "9.0.0"  # Pour Vega 64
+                os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"  # Optimisation de la mémoire
+                
+                # Chargement du modèle
+                if cls._instance._model is None:
+                    # Utilisation du modèle depuis Hugging Face
+                    model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
+                    model_file = "codellama-7b-instruct.Q4_K_M.gguf"
+                    
+                    print(f"Chargement du modèle depuis Hugging Face : {model_path}")
+                    cls._instance._model = AutoModelForCausalLM.from_pretrained(
+                        model_path,
+                        model_file=model_file,
+                        model_type="llama",
+                        gpu_layers=50,  # Augmentation du nombre de couches sur GPU
+                        threads=16,  # Augmentation du nombre de threads
+                        context_length=4096,  # Augmentation de la taille du contexte
+                        batch_size=8,  # Taille du batch pour l'inférence
+                        stream=True,  # Activation du streaming pour une meilleure performance
+                        use_mmap=True,  # Utilisation de la mémoire mmap
+                        use_mlock=True  # Verrouillage de la mémoire pour éviter le swapping
+                    )
+                    print("Modèle chargé avec succès")
+            else:
+                print("Aucun GPU disponible, utilisation du CPU")
+                if cls._instance._model is None:
+                    model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
+                    model_file = "codellama-7b-instruct.Q4_K_M.gguf"
+                    
+                    print(f"Chargement du modèle depuis Hugging Face : {model_path}")
+                    cls._instance._model = AutoModelForCausalLM.from_pretrained(
+                        model_path,
+                        model_file=model_file,
+                        model_type="llama",
+                        gpu_layers=0,
+                        threads=8,
+                        context_length=2048
+                    )
+                    print("Modèle chargé avec succès")
         return cls._instance
 
     def __init__(self):
@@ -60,13 +91,21 @@ class LLMInterface:
         print(f"Prompt complet : {full_prompt}")
         
         try:
+            # Configuration des paramètres de génération
+            generation_config = {
+                "max_new_tokens": 1000,
+                "temperature": 0.7,
+                "top_p": 0.9,
+                "stop": ["Utilisateur:", "\n\n"],
+                "repetition_penalty": 1.1,  # Réduction de la répétition
+                "top_k": 40,  # Ajout du top-k sampling
+                "do_sample": True  # Activation du sampling
+            }
+            
             # Génération de la réponse
             response = self._model(
                 full_prompt,
-                max_new_tokens=1000,
-                temperature=0.7,
-                top_p=0.9,
-                stop=["Utilisateur:", "\n\n"]
+                **generation_config
             )
             
             print(f"Réponse générée : {response[:100]}...")
@@ -101,4 +140,4 @@ class LLMInterface:
                 conversation_text += f"{role_prefix}: {message['content']}\n"
         
         # Construction du prompt final
-        return f"{system_prompt}{conversation_text}\nUtilisateur: {prompt}\nAssistant:" 
+        return f"{system_prompt}\n{conversation_text}\nUtilisateur: {prompt}\nAssistant:" 
