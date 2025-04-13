@@ -31,7 +31,7 @@
           <span class="message-sender">{{ message.role === MessageRole.USER ? 'Vous' : agentName }}</span>
           <span class="message-time">{{ formatTimestamp(message.timestamp) }}</span>
         </div>
-        <div class="message-text" [innerHTML]="message.content"></div>
+        <div class="message-text">{{ message.content }}</div>
       </div>
     </div>
 

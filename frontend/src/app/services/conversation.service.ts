@@ -17,7 +17,7 @@ export class ConversationService {
   private agentsUrl = `${environment.apiUrl}/agents`;
 
   constructor(
-    private http: HttpClient, 
+    private http: HttpClient,
     private stateService: StateService,
     private websocketService: WebsocketService
   ) {
@@ -39,7 +39,11 @@ export class ConversationService {
   getConversation(id: string): Observable<Conversation> {
     return this.http.get<Conversation>(`${this.apiUrl}/${id}`).pipe(
       tap(conversation => {
-        this.stateService.setActiveConversation(conversation);
+        console.log('Conversation récupérée:', conversation);
+        if (conversation && conversation.messages) {
+          this.stateService.setActiveConversation(conversation);
+          this.stateService.updateActiveConversationMessages(conversation.messages);
+        }
         // S'abonner à cette conversation via WebSocket
         this.websocketService.subscribeToConversation(id);
       }),
@@ -109,14 +113,14 @@ export class ConversationService {
   sendMessage(conversationId: string, messageData: { role: string; content: string; metadata: any }): Observable<Message> {
     // S'assurer que la connexion WebSocket est établie
     const isConnected = this.websocketService.connectionStatus$.pipe(take(1));
-    
+
     return isConnected.pipe(
       switchMap(connected => {
         if (!connected) {
           this.websocketService.connect();
           this.websocketService.subscribeToConversation(conversationId);
         }
-        
+
         return this.http.post<Message>(`${this.apiUrl}/${conversationId}/messages`, messageData).pipe(
           tap(message => {
             // On n'ajoute pas le message ici car il sera reçu via WebSocket
@@ -131,24 +135,24 @@ export class ConversationService {
     );
   }
 
-
   loadMessages(conversationId: string, limit?: number): Observable<Message[]> {
-    console.log(`Chargement des messages pour la conversation ${conversationId}`);
-    
-    let params = new HttpParams();
-    if (limit) {
-      params = params.set('limit', limit.toString());
-    }
-    
-    return this.http.get<Message[]>(`${this.apiUrl}/${conversationId}/messages`, { params }).pipe(
+    return this.http.get<Message[]>(`${this.apiUrl}/${conversationId}/messages${limit ? `?limit=${limit}` : ''}`).pipe(
       tap(messages => {
-        console.log(`${messages?.length || 0} messages récupérés`);
-        this.stateService.updateActiveConversationMessages(messages || []);
+        console.log('Messages chargés depuis l\'API:', messages);
+        // Mettre à jour les messages dans le state
+        this.stateService.updateActiveConversationMessages(messages);
+        // Mettre à jour la conversation active avec les messages
+        this.stateService.activeConversation$.pipe(take(1)).subscribe(activeConversation => {
+          if (activeConversation) {
+            const updatedConversation = {
+              ...activeConversation,
+              messages: messages
+            };
+            this.stateService.setActiveConversation(updatedConversation);
+          }
+        });
       }),
-      catchError(error => {
-        console.error('Erreur lors du chargement des messages:', error);
-        return throwError(() => new Error('Erreur lors du chargement des messages'));
-      })
+      catchError(this.handleError)
     );
   }
 

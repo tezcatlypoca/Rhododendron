@@ -36,17 +36,20 @@ export class ConversationComponent implements OnInit, OnDestroy {
           next: (conversation: Conversation) => {
             this.conversationId = conversation.id;
             this.agentName = conversation.agent?.name || 'Assistant';
-            
+
             // Se connecter au WebSocket
             this.websocketService.connect();
             this.websocketService.subscribeToConversation(this.conversationId);
-            
+
             // Mettre à jour l'état global
             this.stateService.setActiveConversation(conversation);
-            
+
             // Explicitement charger les messages
             this.conversationService.loadMessages(this.conversationId).subscribe({
-              next: () => console.log('Messages initiaux chargés pour nouvelle conversation')
+              next: (messages) => {
+                console.log('Messages initiaux chargés pour nouvelle conversation:', messages);
+                this.stateService.updateActiveConversationMessages(messages);
+              }
             });
           },
           error: (error) => {
@@ -58,17 +61,20 @@ export class ConversationComponent implements OnInit, OnDestroy {
         this.conversationService.getConversation(this.conversationId).subscribe({
           next: (conversation: Conversation) => {
             this.agentName = conversation.agent?.name || 'Assistant';
-            
+
             // Mettre à jour l'état global
             this.stateService.setActiveConversation(conversation);
-            
+
             // Se connecter au WebSocket
             this.websocketService.connect();
             this.websocketService.subscribeToConversation(this.conversationId);
-            
+
             // Explicitement charger les messages
             this.conversationService.loadMessages(this.conversationId).subscribe({
-              next: () => console.log('Messages initiaux chargés pour conversation existante')
+              next: (messages) => {
+                console.log('Messages initiaux chargés pour conversation existante:', messages);
+                this.stateService.updateActiveConversationMessages(messages);
+              }
             });
           },
           error: (error) => {
@@ -77,10 +83,10 @@ export class ConversationComponent implements OnInit, OnDestroy {
         });
       }
     });
-    
+
     this.subscriptions.add(routeSub);
   }
-  
+
   ngOnDestroy() {
     this.subscriptions.unsubscribe();
   }

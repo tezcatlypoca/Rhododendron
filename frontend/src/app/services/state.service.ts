@@ -44,7 +44,7 @@ export class StateService {
   updateAgent(updatedAgent: Agent): void {
     const currentAgents = this.agentsSubject.value;
     const index = currentAgents.findIndex(agent => agent.id === updatedAgent.id);
-    
+
     if (index !== -1) {
       const newAgents = [...currentAgents];
       newAgents[index] = updatedAgent;
@@ -65,7 +65,7 @@ export class StateService {
   updateConversation(updatedConversation: Conversation): void {
     const currentConversations = this.conversationsSubject.value;
     const index = currentConversations.findIndex(conv => conv.id === updatedConversation.id);
-    
+
     if (index !== -1) {
       const newConversations = [...currentConversations];
       newConversations[index] = updatedConversation;
@@ -91,15 +91,18 @@ export class StateService {
   // Messages de la conversation active
   updateActiveConversationMessages(messages: Message[]): void {
     console.log('StateService: mise à jour des messages:', messages);
-    // Remplacer tout le tableau plutôt que de faire une fusion
-    this.activeConversationMessagesSubject.next(messages);
-    
+    // S'assurer que les messages sont dans le bon ordre
+    const sortedMessages = [...messages].sort((a, b) =>
+      new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+    this.activeConversationMessagesSubject.next(sortedMessages);
+
     // Mettre à jour également la conversation active
     const activeConversation = this.activeConversationSubject.value;
     if (activeConversation) {
       const updatedConversation = {
         ...activeConversation,
-        messages: messages
+        messages: sortedMessages
       };
       this.activeConversationSubject.next(updatedConversation);
     }
@@ -108,7 +111,7 @@ export class StateService {
   addMessageToActiveConversation(message: Message): void {
     const currentMessages = this.activeConversationMessagesSubject.value;
     this.activeConversationMessagesSubject.next([...currentMessages, message]);
-    
+
     // Mettre à jour également la conversation active
     const activeConversation = this.activeConversationSubject.value;
     if (activeConversation) {
@@ -117,7 +120,7 @@ export class StateService {
         messages: [...currentMessages, message]
       };
       this.activeConversationSubject.next(updatedConversation);
-      
+
       // Mettre à jour la liste des conversations
       this.updateConversation(updatedConversation);
     }

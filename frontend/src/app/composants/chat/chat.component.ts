@@ -1,4 +1,4 @@
-import { Component, Input, OnInit, ViewChild, ElementRef, AfterViewChecked, OnDestroy } from '@angular/core';
+import { Component, Input, OnInit, ViewChild, ElementRef, AfterViewChecked, OnDestroy, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ConversationService } from '../../services/conversation.service';
@@ -20,7 +20,7 @@ import { distinctUntilChanged } from 'rxjs/operators';
     BoutonComponent
   ]
 })
-export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
+export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy, OnChanges {
   @Input() conversationId: string = '';
   @Input() agentName: string = '';
   @Input() agentStatus: string = '';
@@ -42,16 +42,20 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
     private stateService: StateService
   ) {}
 
+  ngOnChanges(changes: SimpleChanges) {
+    console.log('Changements détectés dans le composant chat:', changes);
+    if (changes['conversationId'] && changes['conversationId'].currentValue) {
+      console.log('Nouveau conversationId:', changes['conversationId'].currentValue);
+      this.loadMessages();
+    }
+  }
+
   ngOnInit(): void {
+    console.log('Chat initialisé avec conversationId:', this.conversationId);
     if (this.conversationId) {
-      console.log('Chat initialisé avec conversationId:', this.conversationId);
-      
       // Chargement initial des messages
       this.loadMessages();
-      
-      // Mettre en place le polling
-      this.setupPolling();
-      
+
       // S'abonner aux messages en temps réel
       const messagesSub = this.stateService.activeConversationMessages$
         .subscribe((messages: Message[]) => {
@@ -59,7 +63,10 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
           this.messages = messages;
         });
       this.subscriptions.add(messagesSub);
-      
+
+      // Mettre en place le polling
+      this.setupPolling();
+
       // S'abonner au statut WebSocket
       const connectionSub = this.websocketService.connectionStatus$
         .pipe(distinctUntilChanged())
@@ -108,17 +115,25 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
   }
 
   loadMessages(): void {
+    if (!this.conversationId) return;
+
     this.isLoading = true;
     this.error = '';
 
-    this.conversationService.loadMessages(this.conversationId)
+    // Charger la conversation complète
+    this.conversationService.getConversation(this.conversationId)
       .subscribe({
-        next: (messages) => {
+        next: (conversation) => {
+          console.log('Conversation chargée:', conversation);
+          if (conversation && conversation.messages) {
+            this.messages = conversation.messages;
+            this.stateService.updateActiveConversationMessages(conversation.messages);
+          }
           this.isLoading = false;
         },
         error: (err) => {
-          console.error('Erreur lors du chargement des messages:', err);
-          this.error = 'Erreur lors du chargement des messages';
+          console.error('Erreur lors du chargement de la conversation:', err);
+          this.error = 'Erreur lors du chargement de la conversation';
           this.isLoading = false;
         }
       });
@@ -136,10 +151,10 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
       timestamp: new Date().toISOString(),
       metadata: {}
     } as Message;
-    
+
     // Ajouter à l'interface
     this.messages = [...this.messages, userMessage];
-    
+
     // Vider le champ et activer l'indicateur de chargement
     this.newMessageText = '';
     this.isLoading = true;
@@ -161,9 +176,9 @@ export class ChatComponent implements OnInit, AfterViewChecked, OnDestroy {
             this.messages[index].id = response.id;
           }
         }
-        
+
         this.isLoading = false;
-        
+
         // Déclencher le chargement de la réponse
         setTimeout(() => {
           this.loadMessages();
