@@ -90,7 +90,19 @@ export class StateService {
 
   // Messages de la conversation active
   updateActiveConversationMessages(messages: Message[]): void {
+    console.log('StateService: mise à jour des messages:', messages);
+    // Remplacer tout le tableau plutôt que de faire une fusion
     this.activeConversationMessagesSubject.next(messages);
+    
+    // Mettre à jour également la conversation active
+    const activeConversation = this.activeConversationSubject.value;
+    if (activeConversation) {
+      const updatedConversation = {
+        ...activeConversation,
+        messages: messages
+      };
+      this.activeConversationSubject.next(updatedConversation);
+    }
   }
 
   addMessageToActiveConversation(message: Message): void {

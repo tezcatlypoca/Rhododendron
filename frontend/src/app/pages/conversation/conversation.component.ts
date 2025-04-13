@@ -28,38 +28,50 @@ export class ConversationComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit() {
-    // S'abonner aux changements de paramètres d'URL
     const routeSub = this.route.params.subscribe(params => {
       this.conversationId = params['conv_id'];
       if (!this.conversationId) {
-        // Créer une nouvelle conversation avec un agent assistant
+        // Créer une nouvelle conversation
         this.conversationService.createDefaultConversation().subscribe({
           next: (conversation: Conversation) => {
             this.conversationId = conversation.id;
             this.agentName = conversation.agent?.name || 'Assistant';
             
-            // Se connecter au WebSocket et s'abonner à cette conversation
+            // Se connecter au WebSocket
             this.websocketService.connect();
             this.websocketService.subscribeToConversation(this.conversationId);
             
             // Mettre à jour l'état global
             this.stateService.setActiveConversation(conversation);
+            
+            // Explicitement charger les messages
+            this.conversationService.loadMessages(this.conversationId).subscribe({
+              next: () => console.log('Messages initiaux chargés pour nouvelle conversation')
+            });
           },
-          error: (error: any) => {
+          error: (error) => {
             console.error('Erreur lors de la création de la conversation:', error);
           }
         });
       } else {
-        // Charger les détails de la conversation existante
+        // Charger une conversation existante
         this.conversationService.getConversation(this.conversationId).subscribe({
           next: (conversation: Conversation) => {
             this.agentName = conversation.agent?.name || 'Assistant';
             
-            // Se connecter au WebSocket et s'abonner à cette conversation
+            // Mettre à jour l'état global
+            this.stateService.setActiveConversation(conversation);
+            
+            // Se connecter au WebSocket
             this.websocketService.connect();
             this.websocketService.subscribeToConversation(this.conversationId);
+            
+            // Explicitement charger les messages
+            this.conversationService.loadMessages(this.conversationId).subscribe({
+              next: () => console.log('Messages initiaux chargés pour conversation existante')
+            });
           },
-          error: (error: any) => {
+          error: (error) => {
             console.error('Erreur lors du chargement de la conversation:', error);
           }
         });
@@ -67,19 +79,9 @@ export class ConversationComponent implements OnInit, OnDestroy {
     });
     
     this.subscriptions.add(routeSub);
-    
-    // S'abonner aux changements de la conversation active
-    const conversationSub = this.stateService.activeConversation$.subscribe(conversation => {
-      if (conversation) {
-        this.agentName = conversation.agent?.name || 'Assistant';
-      }
-    });
-    
-    this.subscriptions.add(conversationSub);
   }
   
   ngOnDestroy() {
-    // Nettoyer toutes les souscriptions
     this.subscriptions.unsubscribe();
   }
 }

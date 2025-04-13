@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, Depends, Body
+from fastapi import APIRouter, HTTPException, Depends, Body, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
-from ...models.domain.conversation import Message, MessageRole
-from ...database.models import Conversation, Agent
+# Correction ici: ne pas importer Message depuis le domaine mais utiliser celui de database.models
+# from ...models.domain.conversation import Message, MessageRole
+from ...models.domain.conversation import MessageRole
+from ...database.models import Conversation, Agent, Message
 from ...models.dto.conversation_dto import (
     ConversationCreateDTO,
     ConversationUpdateDTO,
@@ -161,7 +163,7 @@ async def delete_all_messages(conversation_id: str, db: Session = Depends(get_db
             raise HTTPException(status_code=404, detail="Conversation non trouvée")
 
         # Supprimer tous les messages de la conversation
-        from ...database.models import Message
+        # Correction: Message est déjà importé correctement depuis database.models
         db.query(Message).filter(Message.conversation_id == conversation_id).delete(synchronize_session=False)
         db.commit()
 
@@ -172,25 +174,49 @@ async def delete_all_messages(conversation_id: str, db: Session = Depends(get_db
         print(f"Erreur lors de la suppression des messages : {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get(
-    "/{conversation_id}/messages",
-    response_model=List[MessageResponseDTO],
-    summary="Récupérer les messages",
-    description="Récupère tous les messages d'une conversation."
-)
+@router.get("/{conversation_id}/messages", response_model=List[MessageResponseDTO])
 async def get_messages(
     conversation_id: str,
-    limit_data: MessageLimit,
+    limit: Optional[int] = Query(None),  # Utiliser Query() au lieu de Body()
     db: Session = Depends(get_db)
 ):
     """Récupère les messages d'une conversation"""
-    # Vérifier d'abord si la conversation existe
-    conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
-    if not conversation:
-        raise HTTPException(status_code=404, detail="Conversation non trouvée")
-    
-    messages = conversation_service.get_messages(conversation_id, db, limit_data.limit)
-    return messages
+    try:
+        # Vérifier d'abord si la conversation existe
+        conversation = db.query(Conversation).filter(Conversation.id == conversation_id).first()
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Conversation non trouvée")
+
+        # Récupérer les messages avec la limite si spécifiée
+        # Correction: utiliser directement le modèle Message de database.models
+        query = db.query(Message).filter(Message.conversation_id == conversation_id)
+        if limit is not None:
+            query = query.limit(limit)
+        messages = query.all()
+
+        # Si aucun message n'est trouvé, retourner un tableau vide
+        if not messages:
+            return []
+
+        # Convertir les messages en DTOs
+        return [
+            MessageResponseDTO.model_validate({
+                "id": msg.id,
+                "conversation_id": msg.conversation_id,
+                "role": msg.role,
+                "content": msg.content,
+                "timestamp": msg.timestamp,
+                "agent_id": msg.agent_id,
+                "metadata": dict(msg.message_metadata or {})
+            })
+            for msg in messages
+        ]
+    except Exception as e:
+        print(f"Erreur lors de la récupération des messages : {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 @router.put(
     "/{conversation_id}/agent",
@@ -244,4 +270,4 @@ async def delete_all_conversations(db: Session = Depends(get_db)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
-        ) 
+        )

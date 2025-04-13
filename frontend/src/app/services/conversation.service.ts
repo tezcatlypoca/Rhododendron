@@ -1,6 +1,6 @@
 // src/app/services/conversation.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http'; // Ajout de HttpParams ici
 import { Observable, throwError, of } from 'rxjs';
 import { catchError, switchMap, tap, take } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
@@ -131,10 +131,19 @@ export class ConversationService {
     );
   }
 
-  loadMessages(conversationId: string): Observable<Message[]> {
-    return this.http.get<Message[]>(`${this.apiUrl}/${conversationId}/messages`).pipe(
+
+  loadMessages(conversationId: string, limit?: number): Observable<Message[]> {
+    console.log(`Chargement des messages pour la conversation ${conversationId}`);
+    
+    let params = new HttpParams();
+    if (limit) {
+      params = params.set('limit', limit.toString());
+    }
+    
+    return this.http.get<Message[]>(`${this.apiUrl}/${conversationId}/messages`, { params }).pipe(
       tap(messages => {
-        this.stateService.updateActiveConversationMessages(messages);
+        console.log(`${messages?.length || 0} messages récupérés`);
+        this.stateService.updateActiveConversationMessages(messages || []);
       }),
       catchError(error => {
         console.error('Erreur lors du chargement des messages:', error);
