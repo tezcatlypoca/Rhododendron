@@ -4,9 +4,11 @@ import { ConnexionComponent } from './pages/connexion/connexion.component';
 import { InscriptionComponent } from './pages/inscription/inscription.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { authGuard } from './core/gardes/auth.guard';
+import { ConversationComponent } from './pages/conversation/conversation.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'connexion', pathMatch: 'full' },
+  { path: '*', redirectTo: 'connexion', pathMatch: 'full' },
   { path: 'connexion', component: ConnexionComponent },
   { path: 'inscription', component: InscriptionComponent },
   {
@@ -25,8 +27,13 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
-    path: 'conversations/:id',
-    loadComponent: () => import('./pages/conversation/conversation.component').then(m => m.ConversationComponent),
+    path: 'conversation',
+    component: ConversationComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'edition-agent/:id',
+    loadComponent: () => import('./pages/agent-edition/agent-edition.component').then(m => m.AgentEditionComponent),
     canActivate: [authGuard]
   },
   { path: '**', redirectTo: 'connexion' }

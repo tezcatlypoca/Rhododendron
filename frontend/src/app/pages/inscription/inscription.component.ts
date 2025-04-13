@@ -27,7 +27,7 @@ export class InscriptionComponent implements OnInit {
   formulaireInscription: FormGroup;
   erreurMessage: string = '';
   enChargement: boolean = false;
-  
+
   // Messages d'erreur pour les validations
   messagesErreur = {
     username: {
@@ -68,33 +68,12 @@ export class InscriptionComponent implements OnInit {
    * Soumission du formulaire d'inscription
    */
   onSubmit(): void {
-    console.log('Formulaire soumis:', this.formulaireInscription.value);
-    console.log('État du formulaire:', {
-      valid: this.formulaireInscription.valid, 
-      errors: this.formulaireInscription.errors,
-      dirty: this.formulaireInscription.dirty,
-      touched: this.formulaireInscription.touched,
-      values: this.formulaireInscription.value
-    });
-    
-    // Afficher l'état de chaque contrôle pour le débogage
-    Object.keys(this.formulaireInscription.controls).forEach(key => {
-      const control = this.formulaireInscription.get(key);
-      console.log(`Contrôle ${key}:`, {
-        valid: control?.valid,
-        errors: control?.errors,
-        value: control?.value,
-        dirty: control?.dirty,
-        touched: control?.touched
-      });
-    });
-
     if (this.formulaireInscription.invalid) {
       // Marquer tous les champs comme touchés pour afficher les erreurs
       Object.keys(this.formulaireInscription.controls).forEach(key => {
         const control = this.formulaireInscription.get(key);
         control?.markAsTouched();
-        control?.markAsDirty(); // Ajouter ceci pour s'assurer que les contrôles sont marqués comme modifiés
+        control?.markAsDirty();
       });
       return;
     }
@@ -102,15 +81,16 @@ export class InscriptionComponent implements OnInit {
     this.enChargement = true;
     this.erreurMessage = '';
 
+    console.log('Soumission du formulaire d\'inscription:', this.formulaireInscription.value);
+
     this.authService.inscription(this.formulaireInscription.value).subscribe({
-      next: () => {
+      next: (response) => {
+        console.log('Inscription réussie:', response);
         this.enChargement = false;
-        // Rediriger vers la page de connexion après inscription réussie
-        this.router.navigate(['/connexion'], { 
-          queryParams: { registered: 'success' } 
-        });
+        this.router.navigate(['/connexion']);
       },
       error: (erreur) => {
+        console.error('Erreur lors de l\'inscription:', erreur);
         this.enChargement = false;
         this.erreurMessage = erreur.message || 'Erreur lors de l\'inscription';
       }

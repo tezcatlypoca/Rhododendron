@@ -1,122 +1,163 @@
 // src/app/services/conversation.service.ts
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { tap, catchError } from 'rxjs/operators';
-import { v4 as uuidv4 } from 'uuid';
-
+import { HttpClient, HttpParams } from '@angular/common/http'; // Ajout de HttpParams ici
+import { Observable, throwError, of } from 'rxjs';
+import { catchError, switchMap, tap, take } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Agent } from '../modeles/agent.model';
-import { Conversation, Message, MessageRequest, MessageResponse } from '../modeles/conversation.model';
+import { Conversation, Agent } from '../modeles/conversation.model';
+import { Message } from '../modeles/message.model';
+import { StateService } from './state.service';
+import { WebsocketService } from './websocket.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ConversationService {
-  private apiUrl = `${environment.apiUrl}/agents`;
-  
-  // Conversation active
-  private activeConversationSubject = new BehaviorSubject<Conversation | null>(null);
-  activeConversation$ = this.activeConversationSubject.asObservable();
-  
-  // Map des conversations par agent
-  private conversations: Map<string, Conversation> = new Map();
+  private apiUrl = `${environment.apiUrl}/conversations`;
+  private agentsUrl = `${environment.apiUrl}/agents`;
 
-  constructor(private http: HttpClient) {}
-
-  /**
-   * Démarre ou continue une conversation avec un agent
-   */
-  startConversation(agent: Agent): void {
-    let conversation = this.conversations.get(agent.id);
-    
-    if (!conversation) {
-      // Créer une nouvelle conversation si elle n'existe pas
-      conversation = {
-        id: uuidv4(),
-        agentId: agent.id,
-        messages: [],
-        lastActivity: new Date()
-      };
-      this.conversations.set(agent.id, conversation);
-    }
-    
-    this.activeConversationSubject.next(conversation);
+  constructor(
+    private http: HttpClient,
+    private stateService: StateService,
+    private websocketService: WebsocketService
+  ) {
+    // S'abonner aux messages WebSocket pour mettre à jour l'état
+    this.websocketService.messages$.subscribe(message => {
+      this.stateService.addMessageToActiveConversation(message);
+    });
   }
 
-  /**
-   * Envoie un message à l'agent et ajoute la réponse à la conversation
-   */
-  sendMessage(message: string): Observable<MessageResponse> {
-    const conversation = this.activeConversationSubject.value;
-    
-    if (!conversation) {
-      return throwError(() => new Error('Aucune conversation active'));
-    }
-    
-    // Ajouter le message de l'utilisateur à la conversation
-    const userMessage: Message = {
-      id: uuidv4(),
-      sender: 'user',
-      content: message,
-      timestamp: new Date()
-    };
-    
-    conversation.messages.push(userMessage);
-    conversation.lastActivity = new Date();
-    this.activeConversationSubject.next({...conversation});
-    
-    // Envoyer la requête au backend
-    const request: MessageRequest = {
-      prompt: message
-    };
-    
-    return this.http.post<MessageResponse>(`${this.apiUrl}/${conversation.agentId}/request`, request)
-      .pipe(
-        tap(response => {
-          // Ajouter la réponse de l'agent à la conversation
-          const agentMessage: Message = {
-            id: uuidv4(),
-            sender: 'agent',
-            content: response.response,
-            timestamp: new Date(response.timestamp)
+  getConversations(): Observable<Conversation[]> {
+    return this.http.get<Conversation[]>(this.apiUrl).pipe(
+      tap(conversations => {
+        this.stateService.updateConversations(conversations);
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  getConversation(id: string): Observable<Conversation> {
+    return this.http.get<Conversation>(`${this.apiUrl}/${id}`).pipe(
+      tap(conversation => {
+        console.log('Conversation récupérée:', conversation);
+        if (conversation && conversation.messages) {
+          this.stateService.setActiveConversation(conversation);
+          this.stateService.updateActiveConversationMessages(conversation.messages);
+        }
+        // S'abonner à cette conversation via WebSocket
+        this.websocketService.subscribeToConversation(id);
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  createConversation(conversationData: any): Observable<Conversation> {
+    return this.http.post<Conversation>(this.apiUrl, conversationData).pipe(
+      tap(conversation => {
+        this.stateService.addConversation(conversation);
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  createDefaultConversation(): Observable<Conversation> {
+    // D'abord, chercher un agent assistant existant
+    return this.http.get<Agent[]>(`${this.agentsUrl}?role=assistant`).pipe(
+      switchMap(agents => {
+        if (agents && agents.length > 0) {
+          // Utiliser le premier agent assistant trouvé
+          return this.createConversation({
+            title: "Nouvelle conversation",
+            agent_id: agents[0].id
+          });
+        } else {
+          // Créer un nouvel agent assistant
+          const newAgent = {
+            name: "Assistant par défaut",
+            model_type: "llama",
+            role: "assistant",
+            config: { model: "codellama:7b-instruct-q4_0" }
           };
-          
-          conversation.messages.push(agentMessage);
-          conversation.lastActivity = new Date();
-          this.activeConversationSubject.next({...conversation});
-        }),
-        catchError(error => {
-          console.error('Erreur lors de l\'envoi du message:', error);
-          return throwError(() => new Error(error.error?.detail || 'Erreur lors de la communication avec l\'agent'));
-        })
-      );
+          return this.http.post<Agent>(this.agentsUrl, newAgent).pipe(
+            switchMap(agent => {
+              return this.createConversation({
+                title: "Nouvelle conversation",
+                agent_id: agent.id
+              });
+            })
+          );
+        }
+      }),
+      catchError(this.handleError)
+    );
   }
 
-  /**
-   * Récupère la conversation active
-   */
-  getActiveConversation(): Conversation | null {
-    return this.activeConversationSubject.value;
+  updateConversation(id: string, conversationData: any): Observable<Conversation> {
+    return this.http.put<Conversation>(`${this.apiUrl}/${id}`, conversationData).pipe(
+      tap(updatedConversation => {
+        this.stateService.updateConversation(updatedConversation);
+      }),
+      catchError(this.handleError)
+    );
   }
 
-  /**
-   * Récupère toutes les conversations
-   */
-  getAllConversations(): Conversation[] {
-    return Array.from(this.conversations.values());
+  deleteConversation(id: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${id}`).pipe(
+      tap(() => {
+        this.stateService.deleteConversation(id);
+      }),
+      catchError(this.handleError)
+    );
   }
 
-  /**
-   * Efface la conversation active
-   */
-  clearActiveConversation(): void {
-    const conversation = this.activeConversationSubject.value;
-    
-    if (conversation) {
-      conversation.messages = [];
-      conversation.lastActivity = new Date();
-      this.activeConversationSubject.next({...conversation});
-    }
+  sendMessage(conversationId: string, messageData: { role: string; content: string; metadata: any }): Observable<Message> {
+    // S'assurer que la connexion WebSocket est établie
+    const isConnected = this.websocketService.connectionStatus$.pipe(take(1));
+
+    return isConnected.pipe(
+      switchMap(connected => {
+        if (!connected) {
+          this.websocketService.connect();
+          this.websocketService.subscribeToConversation(conversationId);
+        }
+
+        return this.http.post<Message>(`${this.apiUrl}/${conversationId}/messages`, messageData).pipe(
+          tap(message => {
+            // On n'ajoute pas le message ici car il sera reçu via WebSocket
+            // Cela évite les doublons et garantit l'ordre correct
+          }),
+          catchError(error => {
+            console.error('Erreur lors de l\'envoi du message:', error);
+            return throwError(() => new Error('Erreur lors de l\'envoi du message'));
+          })
+        );
+      })
+    );
+  }
+
+  loadMessages(conversationId: string, limit?: number): Observable<Message[]> {
+    return this.http.get<Message[]>(`${this.apiUrl}/${conversationId}/messages${limit ? `?limit=${limit}` : ''}`).pipe(
+      tap(messages => {
+        console.log('Messages chargés depuis l\'API:', messages);
+        // Mettre à jour les messages dans le state
+        this.stateService.updateActiveConversationMessages(messages);
+        // Mettre à jour la conversation active avec les messages
+        this.stateService.activeConversation$.pipe(take(1)).subscribe(activeConversation => {
+          if (activeConversation) {
+            const updatedConversation = {
+              ...activeConversation,
+              messages: messages
+            };
+            this.stateService.setActiveConversation(updatedConversation);
+          }
+        });
+      }),
+      catchError(this.handleError)
+    );
+  }
+
+  private handleError(error: any) {
+    console.error('Une erreur est survenue:', error);
+    return throwError(() => new Error('Une erreur est survenue lors de la communication avec le serveur.'));
   }
 }

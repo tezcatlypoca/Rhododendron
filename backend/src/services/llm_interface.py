@@ -1,81 +1,74 @@
-from typing import Dict, Any, Optional
+from typing import List, Dict, Any, Optional
 import os
-import json
-import subprocess
-import tempfile
-import sys
+from ctransformers import AutoModelForCausalLM
+from ..models.domain.conversation import Message, MessageRole
 
 class LLMInterface:
     _instance = None
+    _model = None
+    _conversation_service = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(LLMInterface, cls).__new__(cls)
+            cls._instance.model_name = "codellama-7b-instruct-q4_0"
+            print(f"Interface LLM initialisée avec le modèle {cls._instance.model_name}")
+            
+            # Chargement du modèle
+            if cls._instance._model is None:
+                # Utilisation du modèle depuis Hugging Face
+                model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
+                model_file = "codellama-7b-instruct.Q4_K_M.gguf"
+                
+                print(f"Chargement du modèle depuis Hugging Face : {model_path}")
+                cls._instance._model = AutoModelForCausalLM.from_pretrained(
+                    model_path,
+                    model_file=model_file,
+                    model_type="llama",
+                    gpu_layers=0,  # Utilisation du CPU uniquement
+                    threads=4,  # Nombre de threads pour l'inférence
+                    context_length=2048  # Taille du contexte
+                )
+                print("Modèle chargé avec succès")
         return cls._instance
 
     def __init__(self):
-        self.model_name = "codellama:7b-instruct-q4_0"
-        print(f"Interface LLM initialisée avec le modèle {self.model_name}")
-        
-        # Configuration pour utiliser le GPU AMD
-        os.environ["OLLAMA_GPU_LAYER"] = "rocm"  # Pour AMD ROCm
-        os.environ["OLLAMA_GPU_DEVICE"] = "0"    # Premier GPU
-        
-        # Vérification que le modèle est installé
-        try:
-            result = subprocess.run(['ollama', 'list'], capture_output=True, text=True, encoding='utf-8')
-            if self.model_name not in result.stdout:
-                print(f"Le modèle {self.model_name} n'est pas installé. Tentative d'installation...")
-                subprocess.run(['ollama', 'pull', self.model_name], check=True, encoding='utf-8')
-                print("Modèle installé avec succès")
-            else:
-                print(f"Modèle {self.model_name} trouvé et prêt à être utilisé")
-                
-            # Vérification de l'utilisation du GPU
-            gpu_info = subprocess.run(['ollama', 'info'], capture_output=True, text=True, encoding='utf-8')
-            print(f"Informations sur le GPU : {gpu_info.stdout}")
-            
-        except subprocess.CalledProcessError as e:
-            print(f"Erreur lors de la vérification du modèle : {str(e)}")
-            raise
+        # L'initialisation est maintenant dans __new__
+        pass
 
-    def generate_response(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> str:
+    @property
+    def conversation_service(self):
+        if self._conversation_service is None:
+            from ..services.conversation_service import ConversationService
+            self._conversation_service = ConversationService()
+        return self._conversation_service
+
+    def generate_response(self, prompt: str, context: Dict[str, Any], conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
         """
-        Génère une réponse à partir d'un prompt et d'un contexte optionnel en utilisant Ollama en local.
+        Génère une réponse à partir d'un prompt et d'un contexte en utilisant le modèle local.
         
         Args:
             prompt: Le prompt de l'utilisateur
-            context: Dictionnaire contenant le contexte de l'agent (role, etc.)
-        
+            context: Le contexte de l'agent (rôle, modèle, etc.)
+            conversation_history: L'historique de la conversation
+            
         Returns:
             La réponse générée par le modèle
         """
-        # Construction du prompt complet avec le contexte
-        full_prompt = self._build_prompt(prompt, context)
+        # Construction du prompt complet
+        full_prompt = self._build_prompt(prompt, context, conversation_history)
         print(f"Prompt complet : {full_prompt}")
         
         try:
-            # Exécution de la commande Ollama en local avec le prompt directement
-            cmd = ['ollama', 'run', self.model_name]
-            print(f"Exécution de la commande : {' '.join(cmd)}")
-            
-            # Utilisation de Popen pour gérer l'entrée/sortie
-            process = subprocess.Popen(
-                cmd,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                encoding='utf-8'
+            # Génération de la réponse
+            response = self._model(
+                full_prompt,
+                max_new_tokens=1000,
+                temperature=0.7,
+                top_p=0.9,
+                stop=["Utilisateur:", "\n\n"]
             )
             
-            # Envoi du prompt et récupération de la réponse
-            stdout, stderr = process.communicate(input=full_prompt)
-            
-            if process.returncode != 0:
-                raise Exception(f"Erreur lors de l'exécution d'Ollama : {stderr}")
-            
-            response = stdout.strip()
             print(f"Réponse générée : {response[:100]}...")
             return response
             
@@ -83,14 +76,29 @@ class LLMInterface:
             print(f"Erreur lors de la génération de la réponse : {str(e)}")
             raise
 
-    def _build_prompt(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> str:
+    def _build_prompt(self, prompt: str, context: Dict[str, Any], conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
         """
-        Construit le prompt complet en incluant le contexte.
-        """
-        if context is None:
-            return prompt
+        Construit le prompt complet en incluant le contexte et l'historique.
+        
+        Args:
+            prompt: Le prompt de l'utilisateur
+            context: Le contexte de l'agent
+            conversation_history: L'historique de la conversation
             
+        Returns:
+            Le prompt complet
+        """
+        # Construction du prompt système
         role = context.get("role", "assistant")
         system_prompt = f"Tu es un {role}. Réponds de manière professionnelle et précise."
         
-        return f"{system_prompt}\n\nUtilisateur: {prompt}\nAssistant:" 
+        # Ajouter l'historique de la conversation si disponible
+        conversation_text = ""
+        if conversation_history:
+            conversation_text = "\nHistorique de la conversation :\n"
+            for message in conversation_history:
+                role_prefix = "Utilisateur" if message["role"] == MessageRole.USER else "Assistant"
+                conversation_text += f"{role_prefix}: {message['content']}\n"
+        
+        # Construction du prompt final
+        return f"{system_prompt}{conversation_text}\nUtilisateur: {prompt}\nAssistant:" 

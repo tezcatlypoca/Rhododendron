@@ -11,19 +11,19 @@
         <li class="nav-item">
           <a routerLink="/dashboard" class="nav-link" routerLinkActive="active">Tableau de bord</a>
         </li>
-        
+
         <li class="nav-item">
           <a routerLink="/agents" class="nav-link" routerLinkActive="active">Agents IA</a>
         </li>
-        
+
         <li class="nav-item">
-          <a routerLink="/agents" class="nav-link" routerLinkActive="active" [queryParams]="{view: 'conversations'}">
+          <a routerLink="/conversation" class="nav-link" routerLinkActive="active">
             <span class="material-icons nav-icon">chat</span>
-            Conversations
+            Conversation
           </a>
         </li>
-        
-        <!-- Utilisation du nouveau composant menu-utilisateur -->
+
+        <!-- Utilisation du composant menu-utilisateur -->
         <li class="nav-item">
           <app-menu-utilisateur [utilisateur]="utilisateur"></app-menu-utilisateur>
         </li>
@@ -34,15 +34,18 @@
         <li class="nav-item">
           <a routerLink="/dashboard" class="nav-link" routerLinkActive="active">Tableau de bord</a>
         </li>
+
         <li class="nav-item">
           <a routerLink="/agents" class="nav-link" routerLinkActive="active">Agents IA</a>
         </li>
+
         <li class="nav-item">
-          <a routerLink="/agents" class="nav-link" routerLinkActive="active" [queryParams]="{view: 'conversations'}">
+          <a routerLink="/conversation" class="nav-link" routerLinkActive="active">
             <span class="material-icons nav-icon">chat</span>
-            Conversations
+            Conversation
           </a>
         </li>
+
         <li class="nav-item">
           <a routerLink="/profil" class="nav-link" routerLinkActive="active">Mon profil</a>
         </li>

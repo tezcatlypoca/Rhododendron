@@ -22,11 +22,13 @@ export class AuthService {
   private jwtHelper = new JwtHelperService();
   private utilisateurSubject = new BehaviorSubject<Utilisateur | null>(null);
   private platformId = inject(PLATFORM_ID);
-  
+
   utilisateur$ = this.utilisateurSubject.asObservable();
 
   constructor(private http: HttpClient) {
-    this.chargerUtilisateur();
+    console.log('Initialisation du service AuthService');
+    // Ne pas charger l'utilisateur au démarrage
+    // this.chargerUtilisateur();
   }
 
   /**
@@ -35,7 +37,9 @@ export class AuthService {
    * @returns Observable avec les informations utilisateur
    */
   inscription(donnees: InscriptionDonnees): Observable<Utilisateur> {
+    console.log('Tentative d\'inscription avec les données:', donnees);
     return this.http.post<Utilisateur>(`${this.apiUrl}/auth/register`, donnees).pipe(
+      tap(response => console.log('Réponse d\'inscription:', response)),
       catchError(error => {
         console.error('Erreur d\'inscription:', error);
         return throwError(() => new Error(error.error?.detail || 'Erreur lors de l\'inscription'));
@@ -58,7 +62,7 @@ export class AuthService {
       tap(reponse => {
         if (isPlatformBrowser(this.platformId)) {
           localStorage.setItem('access_token', reponse.access_token);
-          
+
           // Créer un utilisateur temporaire pour mise à jour immédiate
           try {
             const decodedToken = this.jwtHelper.decodeToken(reponse.access_token);
@@ -119,11 +123,36 @@ export class AuthService {
    */
   estConnecte(): boolean {
     if (!isPlatformBrowser(this.platformId)) {
-      return false; // Toujours retourner false côté serveur
+      return false;
     }
-    
+
     const token = localStorage.getItem('access_token');
-    return !!token && !this.jwtHelper.isTokenExpired(token);
+    if (!token) {
+      return false;
+    }
+
+    try {
+      // Vérifier si le token est valide avant de tenter de le décoder
+      if (this.jwtHelper.isTokenExpired(token)) {
+        console.log('Token expiré');
+        this.deconnexion();
+        return false;
+      }
+
+      // Vérifier si le token est un JWT valide
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        console.log('Token invalide: format incorrect');
+        this.deconnexion();
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.warn('Erreur lors de la vérification du token:', error);
+      this.deconnexion();
+      return false;
+    }
   }
 
   /**
@@ -134,16 +163,56 @@ export class AuthService {
     if (!isPlatformBrowser(this.platformId)) {
       return null; // Toujours retourner null côté serveur
     }
-    
+
     return localStorage.getItem('access_token');
   }
 
   /**
-   * Charge l'utilisateur depuis le token au démarrage
+   * Charge l'utilisateur depuis le token
    */
   private chargerUtilisateur(): void {
-    if (this.estConnecte()) {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      console.log('Aucun token trouvé dans le localStorage');
+      return;
+    }
+
+    try {
+      // Vérifier si le token est valide avant de tenter de le décoder
+      if (this.jwtHelper.isTokenExpired(token)) {
+        console.log('Token expiré');
+        this.deconnexion();
+        return;
+      }
+
+      // Décoder le token pour obtenir les informations de base
+      const decodedToken = this.jwtHelper.decodeToken(token);
+      if (!decodedToken) {
+        console.log('Token invalide');
+        this.deconnexion();
+        return;
+      }
+
+      // Créer un utilisateur temporaire avec les informations du token
+      const tempUtilisateur: Utilisateur = {
+        id: decodedToken.sub || '',
+        username: decodedToken.username || '',
+        email: decodedToken.email || '',
+        roles: decodedToken.roles || [],
+        is_active: true,
+        created_at: new Date().toISOString()
+      };
+      this.utilisateurSubject.next(tempUtilisateur);
+
+      // Charger le profil complet
       this.chargerProfilUtilisateur().subscribe();
+    } catch (error) {
+      console.warn('Erreur lors du chargement de l\'utilisateur:', error);
+      this.deconnexion();
     }
   }
 }

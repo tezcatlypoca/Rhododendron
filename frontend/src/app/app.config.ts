@@ -1,20 +1,21 @@
 // src/app/app.config.ts
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
+import { ApplicationConfig } from '@angular/core';
 import { provideRouter } from '@angular/router';
-import { provideHttpClient, withInterceptors, withFetch } from '@angular/common/http';
-import { provideClientHydration, withEventReplay } from '@angular/platform-browser';
-
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/intercepteurs/auth.interceptor';
+import { AgentService } from './services/agent.service';
+import { ConversationService } from './services/conversation.service';
+import { StateService } from './services/state.service';
+import { WebsocketService } from './services/websocket.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideZoneChangeDetection({ eventCoalescing: true }), 
-    provideRouter(routes), 
-    provideClientHydration(withEventReplay()),
-    provideHttpClient(
-      withFetch(),  // Ajout de withFetch pour la compatibilité SSR
-      withInterceptors([authInterceptor])
-    )
+    provideRouter(routes),
+    provideHttpClient(withInterceptors([authInterceptor])),
+    AgentService,
+    ConversationService,
+    StateService,
+    WebsocketService
   ]
 };

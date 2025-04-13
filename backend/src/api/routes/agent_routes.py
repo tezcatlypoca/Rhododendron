@@ -1,14 +1,16 @@
-from fastapi import APIRouter, HTTPException, Depends
-from typing import List
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from typing import List, Optional
 
-from src.models.dto.agent_dto import (
+from ...database import get_db
+from ...models.dto.agent_dto import (
     AgentCreateDTO,
     AgentUpdateDTO,
     AgentResponseDTO,
     AgentRequestDTO,
     AgentResponseRequestDTO
 )
-from src.services.agent_service import AgentService
+from ...services.agent_service import AgentService
 
 router = APIRouter(
     prefix="/agents",
@@ -26,11 +28,11 @@ agent_service = AgentService()
     "/",
     response_model=AgentResponseDTO,
     summary="Créer un nouvel agent",
-    description="Crée un nouvel agent avec les paramètres spécifiés. L'agent sera initialisé avec les configurations fournies."
+    description="Crée un nouvel agent avec les paramètres spécifiés."
 )
-async def create_agent(agent_dto: AgentCreateDTO):
+async def create_agent(agent_data: AgentCreateDTO, db: Session = Depends(get_db)):
     """Crée un nouvel agent"""
-    return agent_service.create_agent(agent_dto)
+    return agent_service.create_agent(agent_data, db)
 
 @router.get(
     "/",
@@ -38,9 +40,9 @@ async def create_agent(agent_dto: AgentCreateDTO):
     summary="Lister tous les agents",
     description="Récupère la liste complète de tous les agents disponibles dans le système."
 )
-async def list_agents():
-    """Récupère la liste de tous les agents"""
-    return agent_service.list_agents()
+async def list_agents(db: Session = Depends(get_db)):
+    """Liste tous les agents"""
+    return agent_service.get_all_agents(db)
 
 @router.get(
     "/{agent_id}",
@@ -48,9 +50,9 @@ async def list_agents():
     summary="Récupérer un agent",
     description="Récupère les détails d'un agent spécifique par son identifiant unique."
 )
-async def get_agent(agent_id: str):
+async def get_agent(agent_id: str, db: Session = Depends(get_db)):
     """Récupère un agent par son ID"""
-    agent = agent_service.get_agent(agent_id)
+    agent = agent_service.get_agent(agent_id, db)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent non trouvé")
     return agent
@@ -59,24 +61,32 @@ async def get_agent(agent_id: str):
     "/{agent_id}",
     response_model=AgentResponseDTO,
     summary="Mettre à jour un agent",
-    description="Met à jour les propriétés d'un agent existant. Seuls les champs fournis seront modifiés."
+    description="Met à jour les propriétés d'un agent existant."
 )
-async def update_agent(agent_id: str, agent_dto: AgentUpdateDTO):
+async def update_agent(agent_id: str, agent_data: AgentUpdateDTO, db: Session = Depends(get_db)):
     """Met à jour un agent"""
-    agent = agent_service.update_agent(agent_id, agent_dto)
+    agent = agent_service.update_agent(agent_id, agent_data, db)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent non trouvé")
     return agent
 
-@router.post(
-    "/{agent_id}/request",
-    response_model=AgentResponseRequestDTO,
-    summary="Traiter une requête",
-    description="Envoie une requête à un agent spécifique pour traitement. L'agent doit être actif pour traiter la requête."
-)
-async def process_request(agent_id: str, request_dto: AgentRequestDTO):
-    """Traite une requête avec un agent"""
-    response = agent_service.process_request(agent_id, request_dto)
-    if not response:
-        raise HTTPException(status_code=404, detail="Agent non trouvé ou inactif")
-    return response 
+@router.delete("/{agent_id}")
+async def delete_agent(agent_id: str, db: Session = Depends(get_db)):
+    """Supprime un agent"""
+    success = agent_service.delete_agent(agent_id, db)
+    if not success:
+        raise HTTPException(status_code=404, detail="Agent non trouvé")
+    return {"message": "Agent supprimé avec succès"}
+
+# @router.post(
+#     "/{agent_id}/request",
+#     response_model=AgentResponseRequestDTO,
+#     summary="Traiter une requête",
+#     description="Envoie une requête à un agent spécifique pour traitement."
+# )
+# async def process_request(agent_id: str, request_data: AgentRequest, db: Session = Depends(get_db)):
+#     """Traite une requête avec un agent"""
+#     response = agent_service.process_request(agent_id, request_data, db)
+#     if not response:
+#         raise HTTPException(status_code=404, detail="Agent non trouvé ou inactif")
+#     return response

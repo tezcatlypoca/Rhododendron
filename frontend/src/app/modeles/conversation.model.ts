@@ -1,25 +1,20 @@
-// src/app/modeles/conversation.model.ts
-export interface Message {
-    id: string;
-    sender: 'user' | 'agent';
-    content: string;
-    timestamp: Date;
-  }
-  
-  export interface Conversation {
-    id: string;
-    agentId: string;
-    messages: Message[];
-    lastActivity: Date;
-  }
-  
-  export interface MessageRequest {
-    prompt: string;
-    parameters?: Record<string, any>;
-  }
-  
-  export interface MessageResponse {
-    status: string;
-    response: string;
-    timestamp: string;
-  }
+import { Message } from './message.model';
+
+export interface Agent {
+  id: string;
+  name: string;
+  model_type: string;
+  role: string;
+  config: any;
+}
+
+export interface Conversation {
+  id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  agent_id?: string;
+  agent?: Agent;
+  metadata?: any;
+  messages: Message[];
+}

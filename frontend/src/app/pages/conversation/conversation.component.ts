@@ -1,74 +1,93 @@
-// src/app/pages/conversation/conversation.component.ts
 import { Component, OnInit, OnDestroy } from '@angular/core';
-import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { Subscription, switchMap } from 'rxjs';
-
-import { AgentService } from '../../services/agent.service';
-import { ConversationService } from '../../services/conversation.service';
-import { Agent } from '../../modeles/agent.model';
+import { RouterLink, ActivatedRoute } from '@angular/router';
 import { ChatComponent } from '../../composants/chat/chat.component';
-import { BoutonComponent } from '../../composants/bouton/bouton.component';
+import { ConversationService } from '../../services/conversation.service';
+import { StateService } from '../../services/state.service';
+import { WebsocketService } from '../../services/websocket.service';
+import { Conversation } from '../../modeles/conversation.model';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-conversation',
-  templateUrl: './conversation.component.html',
-  styleUrls: ['./conversation.component.scss'],
   standalone: true,
-  imports: [CommonModule, RouterModule, ChatComponent, BoutonComponent]
+  imports: [CommonModule, RouterLink, ChatComponent],
+  templateUrl: './conversation.component.html',
+  styleUrls: ['./conversation.component.scss']
 })
 export class ConversationComponent implements OnInit, OnDestroy {
-  agentId: string = '';
-  agent: Agent | null = null;
-  enChargement: boolean = true;
-  erreurMessage: string = '';
-  
+  conversationId: string = '';
+  agentName: string = 'Assistant';
   private subscriptions = new Subscription();
 
   constructor(
     private route: ActivatedRoute,
-    private router: Router,
-    private agentService: AgentService,
-    private conversationService: ConversationService
+    private conversationService: ConversationService,
+    private stateService: StateService,
+    private websocketService: WebsocketService
   ) {}
 
-  ngOnInit(): void {
-    // Récupérer l'ID de l'agent depuis les paramètres de l'URL
-    const routeSub = this.route.paramMap.pipe(
-      switchMap(params => {
-        this.agentId = params.get('id') || '';
-        
-        if (!this.agentId) {
-          this.erreurMessage = 'ID d\'agent non spécifié';
-          this.enChargement = false;
-          return [];
-        }
-        
-        return this.agentService.getAgentById(this.agentId);
-      })
-    ).subscribe({
-      next: (agent) => {
-        this.agent = agent;
-        this.enChargement = false;
-      },
-      error: (error) => {
-        this.erreurMessage = 'Impossible de charger les informations de l\'agent';
-        this.enChargement = false;
-        console.error('Erreur lors du chargement de l\'agent:', error);
+  ngOnInit() {
+    const routeSub = this.route.params.subscribe(params => {
+      this.conversationId = params['conv_id'];
+      if (!this.conversationId) {
+        // Créer une nouvelle conversation
+        this.conversationService.createDefaultConversation().subscribe({
+          next: (conversation: Conversation) => {
+            this.conversationId = conversation.id;
+            this.agentName = conversation.agent?.name || 'Assistant';
+
+            // Se connecter au WebSocket
+            this.websocketService.connect();
+            this.websocketService.subscribeToConversation(this.conversationId);
+
+            // Mettre à jour l'état global
+            this.stateService.setActiveConversation(conversation);
+
+            // Explicitement charger les messages
+            this.conversationService.loadMessages(this.conversationId).subscribe({
+              next: (messages) => {
+                console.log('Messages initiaux chargés pour nouvelle conversation:', messages);
+                this.stateService.updateActiveConversationMessages(messages);
+              }
+            });
+          },
+          error: (error) => {
+            console.error('Erreur lors de la création de la conversation:', error);
+          }
+        });
+      } else {
+        // Charger une conversation existante
+        this.conversationService.getConversation(this.conversationId).subscribe({
+          next: (conversation: Conversation) => {
+            this.agentName = conversation.agent?.name || 'Assistant';
+
+            // Mettre à jour l'état global
+            this.stateService.setActiveConversation(conversation);
+
+            // Se connecter au WebSocket
+            this.websocketService.connect();
+            this.websocketService.subscribeToConversation(this.conversationId);
+
+            // Explicitement charger les messages
+            this.conversationService.loadMessages(this.conversationId).subscribe({
+              next: (messages) => {
+                console.log('Messages initiaux chargés pour conversation existante:', messages);
+                this.stateService.updateActiveConversationMessages(messages);
+              }
+            });
+          },
+          error: (error) => {
+            console.error('Erreur lors du chargement de la conversation:', error);
+          }
+        });
       }
     });
-    
+
     this.subscriptions.add(routeSub);
   }
 
-  ngOnDestroy(): void {
+  ngOnDestroy() {
     this.subscriptions.unsubscribe();
-  }
-
-  /**
-   * Retourne à la liste des agents
-   */
-  retourListe(): void {
-    this.router.navigate(['/agents']);
   }
 }
