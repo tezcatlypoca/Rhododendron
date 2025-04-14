@@ -16,6 +16,12 @@ class LLMInterface:
             print(f"Interface LLM initialisée avec le modèle {cls._instance.model_name}")
             
             # Vérification de la disponibilité des GPU
+            print("Vérification des GPU...")
+            print(f"CUDA disponible: {torch.cuda.is_available()}")
+            print(f"Nombre de GPU CUDA: {torch.cuda.device_count()}")
+            print(f"Version CUDA: {torch.version.cuda if torch.cuda.is_available() else 'N/A'}")
+            print(f"Version ROCm: {torch.version.hip if hasattr(torch.version, 'hip') else 'N/A'}")
+            
             if torch.cuda.is_available():
                 num_gpus = torch.cuda.device_count()
                 print(f"Nombre de GPU disponibles : {num_gpus}")
@@ -24,6 +30,11 @@ class LLMInterface:
                 os.environ["HIP_VISIBLE_DEVICES"] = "0,1"  # Utiliser les deux GPU
                 os.environ["HSA_OVERRIDE_GFX_VERSION"] = "9.0.0"  # Pour Vega 64
                 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+                
+                print("Variables d'environnement définies:")
+                print(f"HIP_VISIBLE_DEVICES: {os.environ.get('HIP_VISIBLE_DEVICES')}")
+                print(f"HSA_OVERRIDE_GFX_VERSION: {os.environ.get('HSA_OVERRIDE_GFX_VERSION')}")
+                print(f"PYTORCH_CUDA_ALLOC_CONF: {os.environ.get('PYTORCH_CUDA_ALLOC_CONF')}")
                 
                 # Chargement du modèle
                 if cls._instance._model is None:
