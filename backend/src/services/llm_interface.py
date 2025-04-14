@@ -23,7 +23,8 @@ class LLMInterface:
                 # Configuration pour les GPU AMD
                 os.environ["HIP_VISIBLE_DEVICES"] = "0,1"  # Utiliser les deux GPU
                 os.environ["HSA_OVERRIDE_GFX_VERSION"] = "9.0.0"  # Pour Vega 64
-                os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"  # Optimisation de la mémoire
+                os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+                os.environ["CUDA_VISIBLE_DEVICES"] = ""  # Désactiver CUDA
                 
                 # Chargement du modèle
                 if cls._instance._model is None:

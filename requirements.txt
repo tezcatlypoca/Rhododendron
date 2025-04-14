@@ -10,3 +10,4 @@ sqlalchemy==2.0.25
 aiosqlite==0.19.0 
 bcrypt==4.0.1
 passlib==1.7.4
+torch==2.2.0+rocm5.7  # PyTorch avec support ROCm
