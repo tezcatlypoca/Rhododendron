@@ -37,13 +37,16 @@ class LLMInterface:
                         model_path,
                         model_file=model_file,
                         model_type="llama",
-                        gpu_layers=50,  # Augmentation du nombre de couches sur GPU
-                        threads=16,  # Augmentation du nombre de threads
-                        context_length=4096,  # Augmentation de la taille du contexte
-                        batch_size=8,  # Taille du batch pour l'inférence
-                        stream=True,  # Activation du streaming pour une meilleure performance
-                        use_mmap=True,  # Utilisation de la mémoire mmap
-                        use_mlock=True  # Verrouillage de la mémoire pour éviter le swapping
+                        gpu_layers=0,  # Désactiver l'utilisation du GPU
+                        context_length=4096,
+                        threads=8,
+                        batch_size=8,
+                        max_new_tokens=1024,
+                        temperature=0.7,
+                        top_p=0.95,
+                        top_k=40,
+                        repetition_penalty=1.1,
+                        stop=["</s>", "Human:", "Assistant:"]
                     )
                     print("Modèle chargé avec succès")
             else:
@@ -57,9 +60,10 @@ class LLMInterface:
                         model_path,
                         model_file=model_file,
                         model_type="llama",
-                        gpu_layers=0,
+                        gpu_layers=0,  # Désactiver l'utilisation du GPU
                         threads=8,
-                        context_length=2048
+                        context_length=2048,
+                        stream=True
                     )
                     print("Modèle chargé avec succès")
         return cls._instance
