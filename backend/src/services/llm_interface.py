@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 import os
 import torch
-from llama_cpp import Llama
+from ctransformers import AutoModelForCausalLM
 from ..models.domain.conversation import Message, MessageRole
 
 class LLMInterface:
@@ -32,12 +32,17 @@ class LLMInterface:
                     model_file = "codellama-7b-instruct.Q4_K_M.gguf"
                     
                     print(f"Chargement du modèle depuis Hugging Face : {model_path}")
-                    cls._instance._model = Llama(
-                        model_path=model_file,
-                        n_ctx=2048,
-                        n_threads=8,
-                        n_gpu_layers=50,  # Utiliser 50 couches sur GPU
-                        main_gpu=0,  # GPU principal
+                    cls._instance._model = AutoModelForCausalLM.from_pretrained(
+                        model_path,
+                        model_file=model_file,
+                        model_type="llama",
+                        gpu_layers=50,  # Utiliser 50 couches sur GPU
+                        context_length=4096,  # Taille du contexte augmentée
+                        threads=16,  # Nombre de threads augmenté
+                        batch_size=8,  # Taille du batch pour l'inférence
+                        stream=True,  # Activation du streaming
+                        use_mmap=True,  # Utilisation de la mémoire mmap
+                        use_mlock=True,  # Verrouillage de la mémoire
                         tensor_split=[0.5, 0.5]  # Répartition égale entre les deux GPU
                     )
                     print("Modèle chargé avec succès")
@@ -48,11 +53,13 @@ class LLMInterface:
                     model_file = "codellama-7b-instruct.Q4_K_M.gguf"
                     
                     print(f"Chargement du modèle depuis Hugging Face : {model_path}")
-                    cls._instance._model = Llama(
-                        model_path=model_file,
-                        n_ctx=2048,
-                        n_threads=8,
-                        n_gpu_layers=0  # Désactiver l'utilisation du GPU
+                    cls._instance._model = AutoModelForCausalLM.from_pretrained(
+                        model_path,
+                        model_file=model_file,
+                        model_type="llama",
+                        gpu_layers=0,  # Désactiver l'utilisation du GPU
+                        context_length=2048,
+                        threads=8
                     )
                     print("Modèle chargé avec succès")
         return cls._instance
@@ -87,11 +94,13 @@ class LLMInterface:
         try:
             # Configuration des paramètres de génération
             generation_config = {
-                "max_tokens": 1000,
+                "max_new_tokens": 1000,
                 "temperature": 0.7,
                 "top_p": 0.9,
                 "stop": ["Utilisateur:", "\n\n"],
-                "repeat_penalty": 1.1
+                "repetition_penalty": 1.1,  # Réduction de la répétition
+                "top_k": 40,  # Ajout du top-k sampling
+                "do_sample": True  # Activation du sampling
             }
             
             # Génération de la réponse
@@ -100,8 +109,8 @@ class LLMInterface:
                 **generation_config
             )
             
-            print(f"Réponse générée : {response['choices'][0]['text'][:100]}...")
-            return response['choices'][0]['text']
+            print(f"Réponse générée : {response[:100]}...")
+            return response
             
         except Exception as e:
             print(f"Erreur lors de la génération de la réponse : {str(e)}")
