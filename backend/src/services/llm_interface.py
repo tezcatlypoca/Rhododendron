@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 import os
 import torch
-from ctransformers import AutoModelForCausalLM
+from llama_cpp import Llama
 from ..models.domain.conversation import Message, MessageRole
 
 class LLMInterface:
@@ -24,7 +24,6 @@ class LLMInterface:
                 os.environ["HIP_VISIBLE_DEVICES"] = "0,1"  # Utiliser les deux GPU
                 os.environ["HSA_OVERRIDE_GFX_VERSION"] = "9.0.0"  # Pour Vega 64
                 os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
-                os.environ["CUDA_VISIBLE_DEVICES"] = ""  # Désactiver CUDA
                 
                 # Chargement du modèle
                 if cls._instance._model is None:
@@ -33,20 +32,13 @@ class LLMInterface:
                     model_file = "codellama-7b-instruct.Q4_K_M.gguf"
                     
                     print(f"Chargement du modèle depuis Hugging Face : {model_path}")
-                    cls._instance._model = AutoModelForCausalLM.from_pretrained(
-                        model_path,
-                        model_file=model_file,
-                        model_type="llama",
-                        gpu_layers=0,  # Désactiver l'utilisation du GPU
-                        context_length=4096,
-                        threads=8,
-                        batch_size=8,
-                        max_new_tokens=1024,
-                        temperature=0.7,
-                        top_p=0.95,
-                        top_k=40,
-                        repetition_penalty=1.1,
-                        stop=["</s>", "Human:", "Assistant:"]
+                    cls._instance._model = Llama(
+                        model_path=model_file,
+                        n_ctx=2048,
+                        n_threads=8,
+                        n_gpu_layers=50,  # Utiliser 50 couches sur GPU
+                        main_gpu=0,  # GPU principal
+                        tensor_split=[0.5, 0.5]  # Répartition égale entre les deux GPU
                     )
                     print("Modèle chargé avec succès")
             else:
@@ -56,14 +48,11 @@ class LLMInterface:
                     model_file = "codellama-7b-instruct.Q4_K_M.gguf"
                     
                     print(f"Chargement du modèle depuis Hugging Face : {model_path}")
-                    cls._instance._model = AutoModelForCausalLM.from_pretrained(
-                        model_path,
-                        model_file=model_file,
-                        model_type="llama",
-                        gpu_layers=0,  # Désactiver l'utilisation du GPU
-                        threads=8,
-                        context_length=2048,
-                        stream=True
+                    cls._instance._model = Llama(
+                        model_path=model_file,
+                        n_ctx=2048,
+                        n_threads=8,
+                        n_gpu_layers=0  # Désactiver l'utilisation du GPU
                     )
                     print("Modèle chargé avec succès")
         return cls._instance
@@ -98,13 +87,11 @@ class LLMInterface:
         try:
             # Configuration des paramètres de génération
             generation_config = {
-                "max_new_tokens": 1000,
+                "max_tokens": 1000,
                 "temperature": 0.7,
                 "top_p": 0.9,
                 "stop": ["Utilisateur:", "\n\n"],
-                "repetition_penalty": 1.1,  # Réduction de la répétition
-                "top_k": 40,  # Ajout du top-k sampling
-                "do_sample": True  # Activation du sampling
+                "repeat_penalty": 1.1
             }
             
             # Génération de la réponse
@@ -113,8 +100,8 @@ class LLMInterface:
                 **generation_config
             )
             
-            print(f"Réponse générée : {response[:100]}...")
-            return response
+            print(f"Réponse générée : {response['choices'][0]['text'][:100]}...")
+            return response['choices'][0]['text']
             
         except Exception as e:
             print(f"Erreur lors de la génération de la réponse : {str(e)}")
