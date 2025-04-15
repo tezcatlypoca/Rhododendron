@@ -15,87 +15,27 @@ class LLMInterface:
             cls._instance.model_name = "codellama-7b-instruct-q4_0"
             print(f"Interface LLM initialisée avec le modèle {cls._instance.model_name}")
             
-            # Configuration pour ROCm
-            os.environ["HIP_VISIBLE_DEVICES"] = "0,1"  # Utiliser les deux GPU
-            os.environ["HSA_OVERRIDE_GFX_VERSION"] = "9.0.0"  # Pour Vega 64
+            # Définir le chemin absolu vers le fichier modèle
+            model_file_path = os.path.expanduser("~/Documents/Rhododendron/backend/models/codellama-7b-instruct.Q4_K_M.gguf.1")
+            print(f"Chemin absolu du fichier modèle : {model_file_path}")
+
+            # Vérifier l'existence du fichier
+            if not os.path.exists(model_file_path):
+                raise FileNotFoundError(f"Modèle non trouvé: {model_file_path}")
             
-            # Vérification de la disponibilité des GPU
-            print("Vérification des GPU...")
-            print(f"CUDA disponible: {torch.cuda.is_available()}")
-            print(f"Nombre de GPU CUDA: {torch.cuda.device_count()}")
-            print(f"Version CUDA: {torch.version.cuda if torch.cuda.is_available() else 'N/A'}")
-            print(f"Version ROCm: {torch.version.hip if hasattr(torch.version, 'hip') else 'N/A'}")
+            print(f"Fichier modèle trouvé à: {model_file_path}")
             
-            if torch.cuda.is_available():
-                num_gpus = torch.cuda.device_count()
-                print(f"Nombre de GPU disponibles : {num_gpus}")
-                
-                # Configuration pour les GPU AMD
-                os.environ["HIP_VISIBLE_DEVICES"] = "0,1"  # Utiliser les deux GPU
-                os.environ["HSA_OVERRIDE_GFX_VERSION"] = "9.0.0"  # Pour Vega 64
-                os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
-                
-                print("Variables d'environnement définies:")
-                print(f"HIP_VISIBLE_DEVICES: {os.environ.get('HIP_VISIBLE_DEVICES')}")
-                print(f"HSA_OVERRIDE_GFX_VERSION: {os.environ.get('HSA_OVERRIDE_GFX_VERSION')}")
-                print(f"PYTORCH_CUDA_ALLOC_CONF: {os.environ.get('PYTORCH_CUDA_ALLOC_CONF')}")
-                
-                # Chargement du modèle
-                if cls._instance._model is None:
-                    # Utilisation du modèle depuis Hugging Face
-                    model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
-                    model_file = "codellama-7b-instruct.Q4_K_M.gguf"
-                    
-                    print(f"Chargement du modèle depuis Hugging Face : {model_path}")
-                    cls._instance._model = AutoModelForCausalLM.from_pretrained(
-                        model_path,
-                        model_file=model_file,
-                        model_type="llama",
-                        gpu_layers=50,  # Utiliser 50 couches sur GPU
-                        context_length=4096,  # Taille du contexte augmentée
-                        threads=16,  # Nombre de threads augmenté
-                        batch_size=8,  # Taille du batch pour l'inférence
-                        stream=True,  # Activation du streaming
-                        #use_mmap=True,  # Utilisation de la mémoire mmap
-                        #use_mlock=True,  # Verrouillage de la mémoire
-                        #tensor_split=[0.5, 0.5]  # Répartition égale entre les deux GPU
-                    )
-                    print("Modèle chargé avec succès")
-            else:
-                print("Aucun GPU disponible, utilisation du CPU")
-                if cls._instance._model is None:
-                    model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
-                    model_file = "codellama-7b-instruct.Q4_K_M.gguf"
-                    
-                    print(f"Chargement du modèle depuis Hugging Face : {model_path}")
-                    cls._instance._model = AutoModelForCausalLM.from_pretrained(
-                        model_path,
-                        model_file=model_file,
-                        model_type="llama",
-                        gpu_layers=0,  # Désactiver l'utilisation du GPU
-                        context_length=2048,
-                        threads=8
-                    )
-                    print("Modèle chargé avec succès")
-            
-            # Chargement du modèle
-            if cls._instance._model is None:
-                # Utilisation du modèle depuis Hugging Face
-                model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
-                model_file = "codellama-7b-instruct.Q4_K_M.gguf"
-                
-                print(f"Chargement du modèle depuis Hugging Face : {model_path}")
-                cls._instance._model = Llama(
-                    model_path=model_file,
-                    n_gpu_layers=-1,  # Utiliser tous les layers sur GPU
-                    n_ctx=4096,
-                    n_batch=512,
-                    tensor_split=[0.5, 0.5],  # Répartition entre les deux GPUs
-                    n_threads=16,  # Nombre de threads pour le CPU
-                    # use_mmap=True,  # Utilisation de la mémoire mmap
-                    # use_mlock=True  # Verrouillage de la mémoire
-                )
-                print("Modèle chargé avec succès")
+            # Chargement du modèle avec utilisation des GPU
+            cls._instance._model = Llama(
+                model_path=model_file_path,
+                n_gpu_layers=40,  # Nombre de couches à charger sur le GPU
+                n_ctx=4096,  # Taille du contexte
+                n_threads=16,  # Nombre de threads pour le CPU
+                tensor_split=[0.5, 0.5],  # Répartition des tenseurs entre deux GPU (si disponibles)
+                use_mmap=True,  # Utilisation de la mémoire mmap pour optimiser le chargement
+                use_mlock=True  # Verrouillage de la mémoire pour éviter le swap
+            )
+            print("Modèle chargé avec succès via llama_cpp")
         return cls._instance
 
     def __init__(self):
@@ -174,3 +114,33 @@ class LLMInterface:
         
         # Construction du prompt final
         return f"{system_prompt}\n{conversation_text}\nUtilisateur: {prompt}\nAssistant:" 
+    
+""" import subprocess
+
+def get_gpu_memory():
+    # Utiliser rocm-smi pour récupérer la mémoire disponible sur chaque GPU
+    result = subprocess.run(["rocm-smi", "--showmeminfo", "vram"], capture_output=True, text=True)
+    lines = result.stdout.splitlines()
+    memory_available = []
+    for line in lines:
+        if "Used" in line:
+            used = int(line.split(":")[1].strip().split(" ")[0])
+        if "Total" in line:
+            total = int(line.split(":")[1].strip().split(" ")[0])
+            memory_available.append(total - used)
+    return memory_available
+
+# Calculer n_gpu_layers en fonction de la mémoire disponible
+gpu_memory = get_gpu_memory()
+n_gpu_layers = min((min(gpu_memory) // 200) * len(gpu_memory), 40)  # Estimation : 200 Mo par couche
+tensor_split = [1 / len(gpu_memory)] * len(gpu_memory)
+
+cls._instance._model = Llama(
+    model_path=model_file_path,
+    n_gpu_layers=n_gpu_layers,
+    tensor_split=tensor_split,
+    n_ctx=4096,
+    n_threads=16,
+    use_mmap=True,
+    use_mlock=True
+) """
