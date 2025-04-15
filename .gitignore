@@ -1,6 +1,7 @@
 # Projet Rhododendron - Fichier .gitignore unifié
 
 # ========== FRONTEND (Angular) ==========
+/backend/models/
 
 # Compiled output
 /frontend/dist
