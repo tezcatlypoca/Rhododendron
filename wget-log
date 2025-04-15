@@ -1,0 +1,11 @@
+--2025-03-03 18:02:32--  https://repo.radeon.com/rocm/rocm.gpg.key
+Résolution de repo.radeon.com (repo.radeon.com)… 2a02:26f0:9100:27::17c0:edc6, 2a02:26f0:9100:27::17c0:edc5, 23.72.248.196, ...
+Connexion à repo.radeon.com (repo.radeon.com)|2a02:26f0:9100:27::17c0:edc6|:443… connecté.
+requête HTTP transmise, en attente de la réponse… 200 OK
+Taille : 3116 (3,0K) [application/octet-stream]
+Enregistre : ‘STDOUT’
+
+-                     0%[                    ]       0  --.-KB/s               -                   100%[===================>]   3,04K  --.-KB/s    ds 0s      
+
+2025-03-03 18:02:32 (2,31 GB/s) — envoi vers sortie standard [3116/3116]
+

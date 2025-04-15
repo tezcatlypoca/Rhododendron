@@ -26,6 +26,58 @@ class LLMInterface:
             print(f"Version CUDA: {torch.version.cuda if torch.cuda.is_available() else 'N/A'}")
             print(f"Version ROCm: {torch.version.hip if hasattr(torch.version, 'hip') else 'N/A'}")
             
+            if torch.cuda.is_available():
+                num_gpus = torch.cuda.device_count()
+                print(f"Nombre de GPU disponibles : {num_gpus}")
+                
+                # Configuration pour les GPU AMD
+                os.environ["HIP_VISIBLE_DEVICES"] = "0,1"  # Utiliser les deux GPU
+                os.environ["HSA_OVERRIDE_GFX_VERSION"] = "9.0.0"  # Pour Vega 64
+                os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:512"
+                
+                print("Variables d'environnement définies:")
+                print(f"HIP_VISIBLE_DEVICES: {os.environ.get('HIP_VISIBLE_DEVICES')}")
+                print(f"HSA_OVERRIDE_GFX_VERSION: {os.environ.get('HSA_OVERRIDE_GFX_VERSION')}")
+                print(f"PYTORCH_CUDA_ALLOC_CONF: {os.environ.get('PYTORCH_CUDA_ALLOC_CONF')}")
+                
+                # Chargement du modèle
+                if cls._instance._model is None:
+                    # Utilisation du modèle depuis Hugging Face
+                    model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
+                    model_file = "codellama-7b-instruct.Q4_K_M.gguf"
+                    
+                    print(f"Chargement du modèle depuis Hugging Face : {model_path}")
+                    cls._instance._model = AutoModelForCausalLM.from_pretrained(
+                        model_path,
+                        model_file=model_file,
+                        model_type="llama",
+                        gpu_layers=50,  # Utiliser 50 couches sur GPU
+                        context_length=4096,  # Taille du contexte augmentée
+                        threads=16,  # Nombre de threads augmenté
+                        batch_size=8,  # Taille du batch pour l'inférence
+                        stream=True,  # Activation du streaming
+                        #use_mmap=True,  # Utilisation de la mémoire mmap
+                        #use_mlock=True,  # Verrouillage de la mémoire
+                        #tensor_split=[0.5, 0.5]  # Répartition égale entre les deux GPU
+                    )
+                    print("Modèle chargé avec succès")
+            else:
+                print("Aucun GPU disponible, utilisation du CPU")
+                if cls._instance._model is None:
+                    model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
+                    model_file = "codellama-7b-instruct.Q4_K_M.gguf"
+                    
+                    print(f"Chargement du modèle depuis Hugging Face : {model_path}")
+                    cls._instance._model = AutoModelForCausalLM.from_pretrained(
+                        model_path,
+                        model_file=model_file,
+                        model_type="llama",
+                        gpu_layers=0,  # Désactiver l'utilisation du GPU
+                        context_length=2048,
+                        threads=8
+                    )
+                    print("Modèle chargé avec succès")
+            
             # Chargement du modèle
             if cls._instance._model is None:
                 # Utilisation du modèle depuis Hugging Face
