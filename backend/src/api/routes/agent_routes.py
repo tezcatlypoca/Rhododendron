@@ -31,8 +31,6 @@ agent_service = AgentService()
 class AgentRequest(BaseModel):
     """Modèle pour les requêtes d'agent"""
     prompt: str
-    temperature: float = 0.7
-    max_tokens: int = 1000
 
 class AgentResponse(BaseModel):
     """Modèle pour les réponses d'agent"""
@@ -100,20 +98,13 @@ async def process_agent_request(
 ) -> Dict[str, Any]:
     """
     Traite une requête pour un agent spécifique.
-    
-    Args:
-        agent_id: Identifiant de l'agent
-        request: Requête contenant le prompt et les paramètres d'inférence
-        
-    Returns:
-        Réponse de l'agent avec le temps de traitement
     """
     try:
         # Initialiser l'interface LLM
         llm = LLMInterface()
         
-        # Charger le modèle si ce n'est pas déjà fait
-        if llm._model is None:
+        # Vérifier si le modèle est chargé
+        if llm._model_path is None:
             llm.load_model()
         
         # Préparer le contexte
@@ -126,14 +117,7 @@ async def process_agent_request(
         start_time = time.time()
         response = llm.generate_response(
             prompt=request.prompt,
-            context=context,
-            conversation_history=None,  # Pas d'historique pour l'instant
-            params={
-                "temperature": request.temperature,
-                "max_tokens": request.max_tokens,
-                "top_p": 0.9,
-                "stop": ["Utilisateur:", "\n\n"]
-            }
+            context=context
         )
         processing_time = time.time() - start_time
         
