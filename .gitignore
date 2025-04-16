@@ -2,6 +2,9 @@
 
 # ========== FRONTEND (Angular) ==========
 /backend/models/
+/rhodoenv/
+run_bb.sh
+test.py
 
 # Compiled output
 /frontend/dist

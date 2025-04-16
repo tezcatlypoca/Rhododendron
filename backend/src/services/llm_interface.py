@@ -1,41 +1,49 @@
 from typing import List, Dict, Any, Optional
 import os
-import torch
-from llama_cpp import Llama
+import pyopencl as cl
+import numpy as np
 from ..models.domain.conversation import Message, MessageRole
 
 class LLMInterface:
     _instance = None
-    _model = None
+    _context = None
+    _queue = None
+    _program = None
     _conversation_service = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(LLMInterface, cls).__new__(cls)
-            cls._instance.model_name = "codellama-7b-instruct-q4_0"
-            print(f"Interface LLM initialisée avec le modèle {cls._instance.model_name}")
-            
-            # Définir le chemin absolu vers le fichier modèle
-            model_file_path = os.path.expanduser("~/Documents/Rhododendron/backend/models/codellama-7b-instruct.Q4_K_M.gguf.1")
-            print(f"Chemin absolu du fichier modèle : {model_file_path}")
+            print("Initialisation de l'interface LLM avec OpenCL")
 
-            # Vérifier l'existence du fichier
-            if not os.path.exists(model_file_path):
-                raise FileNotFoundError(f"Modèle non trouvé: {model_file_path}")
+            # Initialisation de la plateforme et du GPU
+            platforms = cl.get_platforms()
+            if not platforms:
+                raise RuntimeError("Aucune plateforme OpenCL détectée.")
             
-            print(f"Fichier modèle trouvé à: {model_file_path}")
+            # Sélectionner la première plateforme et le premier GPU
+            platform = platforms[0]
+            devices = platform.get_devices(device_type=cl.device_type.GPU)
+            if not devices:
+                raise RuntimeError("Aucun GPU détecté sur la plateforme OpenCL.")
             
-            # Chargement du modèle avec utilisation des GPU
-            cls._instance._model = Llama(
-                model_path=model_file_path,
-                n_gpu_layers=40,  # Nombre de couches à charger sur le GPU
-                n_ctx=4096,  # Taille du contexte
-                n_threads=16,  # Nombre de threads pour le CPU
-                tensor_split=[0.5, 0.5],  # Répartition des tenseurs entre deux GPU (si disponibles)
-                use_mmap=True,  # Utilisation de la mémoire mmap pour optimiser le chargement
-                use_mlock=True  # Verrouillage de la mémoire pour éviter le swap
-            )
-            print("Modèle chargé avec succès via llama_cpp")
+            device = devices[0]
+            print(f"Utilisation du GPU : {device.name}")
+
+            # Créer le contexte et la file d'attente
+            cls._context = cl.Context([device])
+            cls._queue = cl.CommandQueue(cls._context)
+
+            # Charger le programme OpenCL (kernel)
+            kernel_code = """
+            __kernel void add_vectors(__global const float *a, __global const float *b, __global float *result) {
+                int gid = get_global_id(0);
+                result[gid] = a[gid] + b[gid];
+            }
+            """
+            cls._program = cl.Program(cls._context, kernel_code).build()
+            print("Programme OpenCL chargé avec succès.")
+        
         return cls._instance
 
     def __init__(self):
@@ -48,6 +56,33 @@ class LLMInterface:
             from ..services.conversation_service import ConversationService
             self._conversation_service = ConversationService()
         return self._conversation_service
+
+    """ def add_vectors(self, a: np.ndarray, b: np.ndarray) -> np.ndarray:
+        Exemple de calcul sur GPU : addition de deux vecteurs.
+        
+        Args:
+            a: Premier vecteur (numpy array).
+            b: Deuxième vecteur (numpy array).
+        
+        Returns:
+            Le résultat de l'addition (numpy array).
+
+        if a.shape != b.shape:
+            raise ValueError("Les vecteurs doivent avoir la même taille.")
+        
+        # Préparer les buffers OpenCL
+        mf = cl.mem_flags
+        a_buf = cl.Buffer(self._context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=a)
+        b_buf = cl.Buffer(self._context, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=b)
+        result_buf = cl.Buffer(self._context, mf.WRITE_ONLY, a.nbytes)
+
+        # Exécuter le kernel
+        self._program.add_vectors(self._queue, a.shape, None, a_buf, b_buf, result_buf)
+
+        # Récupérer les résultats
+        result = np.empty_like(a)
+        cl.enqueue_copy(self._queue, result, result_buf)
+        return result """
 
     def generate_response(self, prompt: str, context: Dict[str, Any], conversation_history: Optional[List[Dict[str, str]]] = None) -> str:
         """
@@ -143,4 +178,25 @@ cls._instance._model = Llama(
     n_threads=16,
     use_mmap=True,
     use_mlock=True
-) """
+) 
+
+def print_model_metadata(model_file_path):
+
+    #Affiche les métadonnées du modèle, y compris la taille totale, le nombre de couches, et la taille des couches.
+
+    from llama_cpp import Llama
+
+    print(f"Chargement des métadonnées du modèle depuis : {model_file_path}")
+    model = Llama(model_path=model_file_path, n_gpu_layers=0, use_mmap=True)  # Charger uniquement les métadonnées
+
+    # Afficher les métadonnées importantes
+    print("=== Métadonnées du modèle ===")
+    print(f"Taille totale du modèle : {model.metadata['general.file_size']} octets")
+    print(f"Nombre de couches : {model.metadata['llama.block_count']}")
+    print(f"Taille des embeddings : {model.metadata['llama.embedding_length']}")
+    print(f"Taille du feed-forward : {model.metadata['llama.feed_forward_length']}")
+    print(f"Nombre de têtes d'attention : {model.metadata['llama.attention.head_count']}")
+    print(f"Nombre de têtes clés/valeurs : {model.metadata['llama.attention.head_count_kv']}")
+    print("=============================")
+
+"""
