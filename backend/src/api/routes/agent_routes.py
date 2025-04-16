@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+import time
 
 from ...database import get_db
 from ...models.dto.agent_dto import (
@@ -11,6 +12,9 @@ from ...models.dto.agent_dto import (
     AgentResponseRequestDTO
 )
 from ...services.agent_service import AgentService
+from ...services.llm_interface import LLMInterface
+from ...models.domain.conversation import MessageRole
+from pydantic import BaseModel
 
 router = APIRouter(
     prefix="/agents",
@@ -23,6 +27,17 @@ router = APIRouter(
 
 # Création d'une instance du service
 agent_service = AgentService()
+
+class AgentRequest(BaseModel):
+    """Modèle pour les requêtes d'agent"""
+    prompt: str
+    temperature: float = 0.7
+    max_tokens: int = 1000
+
+class AgentResponse(BaseModel):
+    """Modèle pour les réponses d'agent"""
+    response: str
+    processing_time: float
 
 @router.post(
     "/",
@@ -78,15 +93,57 @@ async def delete_agent(agent_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Agent non trouvé")
     return {"message": "Agent supprimé avec succès"}
 
-# @router.post(
-#     "/{agent_id}/request",
-#     response_model=AgentResponseRequestDTO,
-#     summary="Traiter une requête",
-#     description="Envoie une requête à un agent spécifique pour traitement."
-# )
-# async def process_request(agent_id: str, request_data: AgentRequest, db: Session = Depends(get_db)):
-#     """Traite une requête avec un agent"""
-#     response = agent_service.process_request(agent_id, request_data, db)
-#     if not response:
-#         raise HTTPException(status_code=404, detail="Agent non trouvé ou inactif")
-#     return response
+@router.post("/{agent_id}/request", response_model=AgentResponse)
+async def process_agent_request(
+    agent_id: str,
+    request: AgentRequest
+) -> Dict[str, Any]:
+    """
+    Traite une requête pour un agent spécifique.
+    
+    Args:
+        agent_id: Identifiant de l'agent
+        request: Requête contenant le prompt et les paramètres d'inférence
+        
+    Returns:
+        Réponse de l'agent avec le temps de traitement
+    """
+    try:
+        # Initialiser l'interface LLM
+        llm = LLMInterface()
+        
+        # Charger le modèle si ce n'est pas déjà fait
+        if llm._model is None:
+            llm.load_model()
+        
+        # Préparer le contexte
+        context = {
+            "role": "assistant",
+            "agent_id": agent_id
+        }
+        
+        # Générer la réponse
+        start_time = time.time()
+        response = llm.generate_response(
+            prompt=request.prompt,
+            context=context,
+            conversation_history=None,  # Pas d'historique pour l'instant
+            params={
+                "temperature": request.temperature,
+                "max_tokens": request.max_tokens,
+                "top_p": 0.9,
+                "stop": ["Utilisateur:", "\n\n"]
+            }
+        )
+        processing_time = time.time() - start_time
+        
+        return {
+            "response": response,
+            "processing_time": processing_time
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Erreur lors du traitement de la requête : {str(e)}"
+        )

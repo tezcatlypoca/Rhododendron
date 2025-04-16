@@ -55,7 +55,7 @@ if not os.path.exists(db_path):
 # Création de l'application FastAPI
 app = FastAPI(
     title="API Rhododendron",
-    description="API pour le projet Rhododendron",
+    description="API pour le système d'agents AI collaboratifs",
     version="1.0.0",
     lifespan=lifespan
 )
