@@ -7,7 +7,7 @@ import os
 import sys
 import time
 import logging
-import subprocess
+import ctypes
 from pathlib import Path
 from typing import Dict, Any, Optional, Union
 from ..models.domain.conversation import Message, MessageRole
@@ -19,8 +19,18 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Chemin vers les exécutables compilés localement
+# Chemin vers les DLLs compilées localement
 LOCAL_LLAMA_PATH = Path("F:/ToutPleinDeTrucs/Dev/Rhododendron/dependencies/llama.cpp/build/bin/Release")
+
+# Définition des types C
+class llama_context(ctypes.Structure):
+    pass
+
+class llama_model(ctypes.Structure):
+    pass
+
+class llama_token(ctypes.c_int):
+    pass
 
 class LLMInterface:
     """
@@ -29,6 +39,9 @@ class LLMInterface:
     
     _instance = None
     _model_path = None
+    _llama_lib = None
+    _model = None
+    _ctx = None
     
     def __new__(cls):
         if cls._instance is None:
@@ -40,14 +53,60 @@ class LLMInterface:
         """Initialise l'interface LLM."""
         try:
             if not LOCAL_LLAMA_PATH.exists():
-                raise RuntimeError(f"Le répertoire des exécutables n'existe pas: {LOCAL_LLAMA_PATH}")
+                raise RuntimeError(f"Le répertoire des DLLs n'existe pas: {LOCAL_LLAMA_PATH}")
             
             # Vérifier la présence de llama.dll
             llama_dll_path = LOCAL_LLAMA_PATH / "llama.dll"
             if not llama_dll_path.exists():
                 raise RuntimeError(f"llama.dll non trouvé à {llama_dll_path}")
             
-            logger.info(f"llama.dll trouvé à {llama_dll_path}")
+            # Charger la DLL
+            self._llama_lib = ctypes.CDLL(str(llama_dll_path))
+            logger.info(f"llama.dll chargée depuis {llama_dll_path}")
+            
+            # Définir les prototypes des fonctions de base
+            self._llama_lib.llama_load_model_from_file.restype = ctypes.POINTER(llama_model)
+            self._llama_lib.llama_load_model_from_file.argtypes = [
+                ctypes.c_char_p,  # model_path
+                ctypes.c_int,     # n_ctx
+                ctypes.c_int,     # n_gpu_layers
+            ]
+            
+            self._llama_lib.llama_new_context_with_model.restype = ctypes.POINTER(llama_context)
+            self._llama_lib.llama_new_context_with_model.argtypes = [
+                ctypes.POINTER(llama_model),  # model
+                ctypes.c_int,                 # n_ctx
+            ]
+            
+            self._llama_lib.llama_tokenize.restype = ctypes.c_int
+            self._llama_lib.llama_tokenize.argtypes = [
+                ctypes.POINTER(llama_model),  # model
+                ctypes.c_char_p,              # text
+                ctypes.c_int,                 # text_len
+                ctypes.POINTER(llama_token),  # tokens
+                ctypes.c_int,                 # n_max_tokens
+                ctypes.c_bool,                # add_bos
+            ]
+            
+            self._llama_lib.llama_eval_sequence.restype = ctypes.c_int
+            self._llama_lib.llama_eval_sequence.argtypes = [
+                ctypes.POINTER(llama_context),  # ctx
+                ctypes.POINTER(llama_token),    # tokens
+                ctypes.c_int,                   # n_tokens
+                ctypes.c_int,                   # n_past
+                ctypes.c_int,                   # n_threads
+            ]
+            
+            self._llama_lib.llama_sample_token.restype = llama_token
+            self._llama_lib.llama_sample_token.argtypes = [
+                ctypes.POINTER(llama_context),  # ctx
+            ]
+            
+            self._llama_lib.llama_token_to_str.restype = ctypes.c_char_p
+            self._llama_lib.llama_token_to_str.argtypes = [
+                ctypes.POINTER(llama_model),  # model
+                llama_token,                  # token
+            ]
             
             # Configuration DirectML
             self._setup_directml()
@@ -94,6 +153,26 @@ class LLMInterface:
                 raise FileNotFoundError(f"Le modèle n'existe pas à l'emplacement: {model_path}")
             
             self._model_path = model_path
+            
+            # Charger le modèle
+            n_ctx = 2048  # Taille du contexte
+            n_gpu_layers = 100  # Nombre de couches sur GPU
+            
+            self._model = self._llama_lib.llama_load_model_from_file(
+                str(model_path).encode('utf-8'),
+                n_ctx,
+                n_gpu_layers
+            )
+            
+            if not self._model:
+                raise RuntimeError("Échec du chargement du modèle")
+            
+            # Créer le contexte
+            self._ctx = self._llama_lib.llama_new_context_with_model(self._model, n_ctx)
+            
+            if not self._ctx:
+                raise RuntimeError("Échec de la création du contexte")
+            
             logger.info(f"Modèle chargé depuis {model_path}")
             
         except Exception as e:
@@ -109,7 +188,7 @@ class LLMInterface:
         Génère une réponse à partir d'un prompt.
         """
         try:
-            if not self._model_path:
+            if not self._model or not self._ctx:
                 raise RuntimeError("Le modèle n'est pas chargé")
             
             # Construire le prompt complet avec le format instruct
@@ -117,60 +196,58 @@ class LLMInterface:
             system_prompt = f"Tu es un {role} professionnel et compétent. Tu dois répondre de manière claire et concise."
             full_prompt = f"<s>[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n{prompt} [/INST]"
             
-            # Construire la commande avec llama-cli.exe
-            cmd = [
-                str(LOCAL_LLAMA_PATH / "llama-cli.exe"),
-                "--model", str(self._model_path),
-                "--prompt", full_prompt,
-                "--n-predict", "256",
-                "--temp", "0.7",
-                "--top-p", "0.9",
-                "--ctx-size", "1024",
-                "--repeat-penalty", "1.1",
-                "--mlock"
-            ]
+            # Convertir le prompt en tokens
+            prompt_bytes = full_prompt.encode('utf-8')
+            max_tokens = 256
+            tokens = (llama_token * max_tokens)()
+            n_tokens = self._llama_lib.llama_tokenize(
+                self._model,
+                prompt_bytes,
+                len(prompt_bytes),
+                tokens,
+                max_tokens,
+                True
+            )
             
-            # Afficher la commande pour le débogage
-            logger.info("Commande complète:")
-            logger.info(f"Exécutable: {cmd[0]}")
-            logger.info(f"Modèle: {cmd[2]}")
-            logger.info(f"Arguments: {' '.join(cmd[5:])}")
+            if n_tokens <= 0:
+                raise RuntimeError("Échec de la tokenisation")
             
-            # Exécuter la commande avec un timeout plus long
-            try:
-                start_time = time.time()
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    encoding='latin-1',
-                    timeout=60
-                )
+            # Générer la réponse
+            response_tokens = []
+            start_time = time.time()
+            
+            for i in range(n_tokens, max_tokens):
+                # Évaluer les tokens
+                if self._llama_lib.llama_eval_sequence(self._ctx, tokens, i, 0, 4) != 0:
+                    raise RuntimeError("Échec de l'évaluation")
                 
-                # Calculer le temps d'exécution
-                execution_time = time.time() - start_time
-                logger.info(f"Temps d'exécution: {execution_time:.2f} secondes")
+                # Échantillonner le prochain token
+                token = self._llama_lib.llama_sample_token(self._ctx)
+                if token == 2:  # Token EOS
+                    break
                 
-                # Afficher la sortie d'erreur pour le débogage
-                if result.stderr:
-                    logger.error(f"Erreur: {result.stderr}")
-                
-                # Convertir la sortie en UTF-8
-                response = result.stdout.strip()
-                try:
-                    response = response.encode('latin-1').decode('utf-8')
-                except UnicodeError:
-                    pass
-                
-                # Nettoyer la réponse pour ne garder que la partie après [/INST]
-                if "[/INST]" in response:
-                    response = response.split("[/INST]")[1].strip()
-                
-                logger.info(f"Réponse générée: {response[:100]}...")
-                return response
-                
-            except subprocess.TimeoutExpired:
-                raise RuntimeError("La génération a dépassé le timeout de 1 minute")
+                response_tokens.append(token)
+                tokens[i] = token
+            
+            # Calculer le temps d'exécution
+            execution_time = time.time() - start_time
+            logger.info(f"Temps d'exécution: {execution_time:.2f} secondes")
+            
+            # Convertir les tokens en texte
+            response_parts = []
+            for token in response_tokens:
+                token_str = self._llama_lib.llama_token_to_str(self._model, token)
+                if token_str:
+                    response_parts.append(token_str.decode('utf-8'))
+            
+            response_str = ''.join(response_parts)
+            
+            # Nettoyer la réponse pour ne garder que la partie après [/INST]
+            if "[/INST]" in response_str:
+                response_str = response_str.split("[/INST]")[1].strip()
+            
+            logger.info(f"Réponse générée: {response_str[:100]}...")
+            return response_str
             
         except Exception as e:
             logger.error(f"Erreur lors de la génération: {str(e)}")
