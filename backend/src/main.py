@@ -12,11 +12,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 
-from src.api.routes import auth, agent_routes, conversation_routes, user_routes
+from src.api.routes import auth, agent_routes, conversation_routes, user_routes, websocket_routes
 from src.core.config import settings
-from src.database import init_db
+from src.database import init_db, get_db
 from sqlalchemy import create_engine
 from src.database.models import Base
+from src.services.agent_manager import AgentManager
+from src.services.agent_service import AgentService
+from sqlalchemy.orm import Session
+import asyncio
 
 # Variable globale pour suivre l'état de l'application
 app = None
@@ -38,6 +42,27 @@ async def lifespan(app: FastAPI):
     
     # Initialisation de la base de données
     init_db()
+    
+    # Démarrer l'AgentManager
+    agent_manager = AgentManager()
+    await agent_manager.start()
+    
+    # Enregistrer les agents existants
+    agent_service = AgentService()
+    db = next(get_db())
+    try:
+        agents = agent_service.get_all_agents(db)
+        for agent in agents:
+            await agent_manager.register_agent(
+                agent_id=agent.id,
+                role=agent.role,
+                initial_context={
+                    "model_type": agent.model_type,
+                    "config": agent.config
+                }
+            )
+    finally:
+        db.close()
     
     yield
     
@@ -73,12 +98,34 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_event():
     init_db()
+    
+    # Démarrer l'AgentManager
+    agent_manager = AgentManager()
+    await agent_manager.start()
+    
+    # Enregistrer les agents existants
+    agent_service = AgentService()
+    db = next(get_db())
+    try:
+        agents = agent_service.get_all_agents(db)
+        for agent in agents:
+            await agent_manager.register_agent(
+                agent_id=agent.id,
+                role=agent.role,
+                initial_context={
+                    "model_type": agent.model_type,
+                    "config": agent.config
+                }
+            )
+    finally:
+        db.close()
 
 # Enregistrement des routers
 app.include_router(auth.router, tags=["auth"])
 app.include_router(agent_routes.router, tags=["agents"])
 app.include_router(conversation_routes.router, tags=["conversations"])
 app.include_router(user_routes.router, tags=["users"])
+app.include_router(websocket_routes.router, tags=["websocket"])
 
 @app.get("/")
 async def root():

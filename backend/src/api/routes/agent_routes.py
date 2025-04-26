@@ -32,7 +32,7 @@ agent_service = AgentService()
 )
 async def create_agent(agent_data: AgentCreateDTO, db: Session = Depends(get_db)):
     """Crée un nouvel agent"""
-    return agent_service.create_agent(agent_data, db)
+    return await agent_service.create_agent(agent_data, db)
 
 @router.get(
     "/",
@@ -65,7 +65,7 @@ async def get_agent(agent_id: str, db: Session = Depends(get_db)):
 )
 async def update_agent(agent_id: str, agent_data: AgentUpdateDTO, db: Session = Depends(get_db)):
     """Met à jour un agent"""
-    agent = agent_service.update_agent(agent_id, agent_data, db)
+    agent = await agent_service.update_agent(agent_id, agent_data, db)
     if not agent:
         raise HTTPException(status_code=404, detail="Agent non trouvé")
     return agent
@@ -73,7 +73,7 @@ async def update_agent(agent_id: str, agent_data: AgentUpdateDTO, db: Session = 
 @router.delete("/{agent_id}")
 async def delete_agent(agent_id: str, db: Session = Depends(get_db)):
     """Supprime un agent"""
-    success = agent_service.delete_agent(agent_id, db)
+    success = await agent_service.delete_agent(agent_id, db)
     if not success:
         raise HTTPException(status_code=404, detail="Agent non trouvé")
     return {"message": "Agent supprimé avec succès"}
@@ -86,7 +86,7 @@ async def delete_agent(agent_id: str, db: Session = Depends(get_db)):
 )
 async def process_agent_request(agent_id: str, request: AgentRequestDTO, db: Session = Depends(get_db)):
     """Traite une requête pour un agent spécifique"""
-    response = agent_service.process_request(agent_id, request, db)
+    response = await agent_service.process_request(agent_id, request, db)
     if response.status == "error":
         raise HTTPException(status_code=400, detail=response.response)
     return response
