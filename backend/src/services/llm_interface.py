@@ -1,7 +1,13 @@
 from typing import List, Dict, Any, Optional
 import os
+import warnings
 from ctransformers import AutoModelForCausalLM
 from ..models.domain.conversation import Message, MessageRole
+
+# Désactiver les avertissements spécifiques
+warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+warnings.filterwarnings("ignore", category=FutureWarning, module="huggingface_hub")
+warnings.filterwarnings("ignore", category=FutureWarning, module="onnxscript")
 
 class LLMInterface:
     _instance = None
@@ -11,30 +17,45 @@ class LLMInterface:
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(LLMInterface, cls).__new__(cls)
-            cls._instance.model_name = "codellama-7b-instruct-q4_0"
-            print(f"Interface LLM initialisée avec le modèle {cls._instance.model_name}")
+            # Chemin vers le modèle local
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            model_path = os.path.join(base_dir, "llm_models", "codellama-7b-instruct-q4_0.gguf")
             
-            # Chargement du modèle
-            if cls._instance._model is None:
-                # Utilisation du modèle depuis Hugging Face
-                model_path = "TheBloke/CodeLlama-7B-Instruct-GGUF"
-                model_file = "codellama-7b-instruct.Q4_K_M.gguf"
-                
-                print(f"Chargement du modèle depuis Hugging Face : {model_path}")
-                cls._instance._model = AutoModelForCausalLM.from_pretrained(
-                    model_path,
-                    model_file=model_file,
-                    model_type="llama",
-                    gpu_layers=0,  # Utilisation du CPU uniquement
-                    threads=4,  # Nombre de threads pour l'inférence
-                    context_length=2048  # Taille du contexte
-                )
-                print("Modèle chargé avec succès")
+            # Vérification de l'existence du fichier
+            if not os.path.exists(model_path):
+                raise FileNotFoundError(f"Le modèle n'a pas été trouvé à l'emplacement : {model_path}")
+            
+            cls._instance.model_path = model_path
+            print(f"Interface LLM initialisée avec le modèle local : {cls._instance.model_path}")
         return cls._instance
 
     def __init__(self):
         # L'initialisation est maintenant dans __new__
         pass
+
+    def _load_model(self):
+        """Charge le modèle uniquement si nécessaire"""
+        if self._model is None:
+            try:
+                print(f"Chargement du modèle depuis le chemin local : {self.model_path}")
+                
+                # Vérification de l'existence du fichier
+                if not os.path.exists(self.model_path):
+                    raise FileNotFoundError(f"Le modèle n'a pas été trouvé à l'emplacement : {self.model_path}")
+                
+                # Chargement du modèle avec optimisations CPU
+                self._model = AutoModelForCausalLM.from_pretrained(
+                    self.model_path,
+                    model_type="llama",
+                    gpu_layers=0,  # Utilisation du CPU uniquement
+                    threads=4,  # Nombre de threads pour l'inférence
+                    context_length=2048  # Taille du contexte
+                )
+                
+                print("Modèle chargé avec succès")
+            except Exception as e:
+                print(f"Erreur lors du chargement du modèle : {str(e)}")
+                raise
 
     @property
     def conversation_service(self):
@@ -55,6 +76,9 @@ class LLMInterface:
         Returns:
             La réponse générée par le modèle
         """
+        # Chargement du modèle si nécessaire
+        self._load_model()
+        
         # Construction du prompt complet
         full_prompt = self._build_prompt(prompt, context, conversation_history)
         print(f"Prompt complet : {full_prompt}")

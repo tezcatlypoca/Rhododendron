@@ -78,15 +78,15 @@ async def delete_agent(agent_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Agent non trouvé")
     return {"message": "Agent supprimé avec succès"}
 
-# @router.post(
-#     "/{agent_id}/request",
-#     response_model=AgentResponseRequestDTO,
-#     summary="Traiter une requête",
-#     description="Envoie une requête à un agent spécifique pour traitement."
-# )
-# async def process_request(agent_id: str, request_data: AgentRequest, db: Session = Depends(get_db)):
-#     """Traite une requête avec un agent"""
-#     response = agent_service.process_request(agent_id, request_data, db)
-#     if not response:
-#         raise HTTPException(status_code=404, detail="Agent non trouvé ou inactif")
-#     return response
+@router.post(
+    "/{agent_id}/request",
+    response_model=AgentResponseRequestDTO,
+    summary="Envoyer une requête à un agent",
+    description="Envoie une requête à un agent spécifique et récupère sa réponse."
+)
+async def process_agent_request(agent_id: str, request: AgentRequestDTO, db: Session = Depends(get_db)):
+    """Traite une requête pour un agent spécifique"""
+    response = agent_service.process_request(agent_id, request, db)
+    if response.status == "error":
+        raise HTTPException(status_code=400, detail=response.response)
+    return response
