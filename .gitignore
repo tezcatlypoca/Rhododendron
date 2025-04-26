@@ -166,3 +166,11 @@ frontend/.vscode-test-workspace-workspace-settings/
 frontend/.vscode-test-workspace-workspace-extensions/
 frontend/.vscode-test-workspace-workspace-memento/
 frontend/.vscode-test-workspace-workspace-global-state/
+
+# Modèles
+backend/llm_models/
+*.onnx
+
+# Dépendances
+dependencies/
+*.whl
