@@ -1,12 +1,5 @@
-from .base import Base, get_db, init_db
-from .models import Agent, Conversation, Message, User
+from .models import Base, User, Agent, Conversation, Message, Projet
+from .init_db import init_db
+from .database import get_db
 
-__all__ = [
-    'Base',
-    'get_db',
-    'init_db',
-    'Agent',
-    'Conversation',
-    'Message',
-    'User'
-] 
+__all__ = ['Base', 'User', 'Agent', 'Conversation', 'Message', 'Projet', 'init_db', 'get_db'] 

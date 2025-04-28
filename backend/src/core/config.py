@@ -9,15 +9,15 @@ load_dotenv()
 class Settings(BaseSettings):
     # Configuration de l'application
     APP_NAME: str = "Rhododendron"
-    DEBUG: bool = True
+    DEBUG: bool = False
     
     # Configuration de la sécurité
-    SECRET_KEY: str = os.getenv("SECRET_KEY", "votre_clé_secrète_très_longue_et_complexe")
-    ALGORITHM: str = os.getenv("ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
+    SECRET_KEY: str = "votre_clé_secrète_très_longue_et_complexe"  # À changer en production
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
     # Configuration de la base de données
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./users.db")
+    DATABASE_URL: str = "sqlite:///agents.db"
 
     class Config:
         env_file = ".env"

@@ -3,6 +3,8 @@ import sys
 import signal
 from contextlib import asynccontextmanager
 
+from backend.src.api.routes import projet_routes
+
 # Ajout du dossier backend au PYTHONPATH
 backend_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(backend_path)
@@ -126,6 +128,7 @@ app.include_router(agent_routes.router, tags=["agents"])
 app.include_router(conversation_routes.router, tags=["conversations"])
 app.include_router(user_routes.router, tags=["users"])
 app.include_router(websocket_routes.router, tags=["websocket"])
+app.include_router(projet_routes.router, tags=["projets"])
 
 @app.get("/")
 async def root():
@@ -138,6 +141,14 @@ async def custom_swagger_ui_html():
         title=f"{settings.APP_NAME} - Documentation",
         swagger_js_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js",
         swagger_css_url="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css",
+        swagger_ui_parameters={
+            "defaultModelsExpandDepth": -1,
+            "docExpansion": "none",
+            "filter": True,
+            "showExtensions": True,
+            "showCommonExtensions": True,
+            "syntaxHighlight.theme": "monokai"
+        }
     )
 
 def custom_openapi():
@@ -161,6 +172,14 @@ def custom_openapi():
         - `GET /users/{id}` : Récupérer un utilisateur spécifique
         - `PUT /users/{id}` : Mettre à jour un utilisateur
         - `DELETE /users/{id}` : Supprimer un utilisateur
+
+        ## Routes des projets
+        - Gestion des projets
+        - `POST /projets/` : Créer un nouveau projet
+        - `GET /projets/` : Lister tous les projets de l'utilisateur
+        - `GET /projets/{id}` : Récupérer un projet spécifique
+        - `PUT /projets/{id}` : Mettre à jour un projet
+        - `DELETE /projets/{id}` : Supprimer un projet
 
         ## Routes des agents
         - Création et gestion des agents IA

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, JSON, ForeignKey
+from sqlalchemy import Column, String, Boolean, DateTime, JSON, ForeignKey, Integer
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from .base import Base
@@ -16,6 +16,9 @@ class User(Base):
     created_at = Column(DateTime, default=func.now())
     last_login = Column(DateTime, nullable=True)
 
+    # Relations
+    projets = relationship("Projet", back_populates="compte")
+
 class Agent(Base):
     __tablename__ = "agents"
 
@@ -27,8 +30,11 @@ class Agent(Base):
     config = Column(JSON, default={})
     created_at = Column(DateTime, default=func.now())
     last_used = Column(DateTime, default=func.now())
+    projet_id = Column(String, ForeignKey("projets.id"), nullable=True)
 
+    # Relations
     conversations = relationship("Conversation", back_populates="agent")
+    projet = relationship("Projet", back_populates="agents")
 
 class Conversation(Base):
     __tablename__ = "conversations"
@@ -55,4 +61,18 @@ class Message(Base):
     message_metadata = Column(JSON, default={})
 
     conversation = relationship("Conversation", back_populates="messages")
-    agent = relationship("Agent") 
+    agent = relationship("Agent")
+
+class Projet(Base):
+    __tablename__ = "projets"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    nom = Column(String, nullable=False)
+    description = Column(String)
+    date_creation = Column(DateTime, default=func.now())
+    date_modification = Column(DateTime, default=func.now(), onupdate=func.now())
+    compte_id = Column(String, ForeignKey("users.id"), nullable=False)
+
+    # Relations
+    compte = relationship("User", back_populates="projets")
+    agents = relationship("Agent", back_populates="projet", cascade="all, delete-orphan") 
