@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from uuid import UUID
 from ...database import get_db
 from ...models.dto.projet_dto import ProjetCreate, ProjetUpdate, ProjetInDB
 from ...repositories.projet_repository import ProjetRepository
@@ -40,7 +41,7 @@ def get_projets(
 
 @router.get("/{projet_id}", response_model=ProjetInDB)
 def get_projet(
-    projet_id: int,
+    projet_id: UUID,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):
@@ -55,7 +56,7 @@ def get_projet(
 
 @router.put("/{projet_id}", response_model=ProjetInDB)
 def update_projet(
-    projet_id: int,
+    projet_id: UUID,
     projet: ProjetUpdate,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
@@ -74,7 +75,7 @@ def update_projet(
 
 @router.delete("/{projet_id}")
 def delete_projet(
-    projet_id: int,
+    projet_id: UUID,
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user)
 ):

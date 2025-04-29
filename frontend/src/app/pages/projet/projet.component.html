@@ -1,0 +1,36 @@
+<div class="container">
+  <h2>Créer un nouveau projet</h2>
+  
+  <form (ngSubmit)="onSubmit()" #projetForm="ngForm">
+    <div class="form-group">
+      <label for="nom">Nom du projet</label>
+      <input 
+        type="text" 
+        id="nom" 
+        name="nom" 
+        [(ngModel)]="projet.nom" 
+        required 
+        class="form-control"
+        placeholder="Entrez le nom du projet">
+    </div>
+
+    <div class="form-group">
+      <label for="description">Description</label>
+      <textarea 
+        id="description" 
+        name="description" 
+        [(ngModel)]="projet.description" 
+        class="form-control"
+        placeholder="Entrez une description du projet"
+        rows="3">
+      </textarea>
+    </div>
+
+    <button 
+      type="submit" 
+      class="btn btn-primary" 
+      [disabled]="!projetForm.form.valid">
+      Créer le projet
+    </button>
+  </form>
+</div>

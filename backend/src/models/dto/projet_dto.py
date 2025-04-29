@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 class ProjetBase(BaseModel):
     nom: str
@@ -13,10 +14,10 @@ class ProjetUpdate(ProjetBase):
     pass
 
 class ProjetInDB(ProjetBase):
-    id: int
+    id: UUID
     date_creation: datetime
     date_modification: datetime
-    compte_id: int
+    compte_id: UUID
 
     class Config:
         from_attributes = True 

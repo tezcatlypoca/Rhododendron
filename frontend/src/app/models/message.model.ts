@@ -1,10 +1,18 @@
 export interface Message {
   id: string;
-  role: 'user' | 'assistant';
   content: string;
-  createdAt: Date;
-  metadata?: {
-    conversationId: string;
-    [key: string]: any;
-  };
+  role: MessageRole;
+  conversation_id: string;
+  created_at: Date;
+}
+
+export interface MessageCreate {
+  content: string;
+  role: MessageRole;
+}
+
+export enum MessageRole {
+  USER = 'user',
+  ASSISTANT = 'assistant',
+  SYSTEM = 'system'
 }

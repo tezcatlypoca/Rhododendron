@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 
-from src.api.routes import auth, agent_routes, conversation_routes, user_routes, websocket_routes
+from src.api.routes import auth, agent_routes, conversation_routes, user_routes, websocket_routes, default
 from src.core.config import settings
 from src.database import init_db, get_db
 from sqlalchemy import create_engine
@@ -129,6 +129,7 @@ app.include_router(conversation_routes.router, tags=["conversations"])
 app.include_router(user_routes.router, tags=["users"])
 app.include_router(websocket_routes.router, tags=["websocket"])
 app.include_router(projet_routes.router, tags=["projets"])
+app.include_router(default.router, tags=["default"])
 
 @app.get("/")
 async def root():

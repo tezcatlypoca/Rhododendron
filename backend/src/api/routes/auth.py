@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from typing import Annotated
+from pydantic import BaseModel, EmailStr
 
 from ...models.schemas.auth import UserCreate, UserResponse, Token
 from ...services.auth_service import AuthService
@@ -8,6 +9,10 @@ from ..dependencies import get_auth_service
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register(
@@ -26,12 +31,12 @@ async def register(
 
 @router.post("/login", response_model=Token)
 async def login(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    login_data: LoginRequest,
     auth_service: AuthService = Depends(get_auth_service)
 ):
     """Connecte un utilisateur et retourne un token JWT"""
     try:
-        token = await auth_service.login(form_data.username, form_data.password)
+        token = await auth_service.login(login_data.email, login_data.password)
         return token
     except Exception as e:
         raise HTTPException(

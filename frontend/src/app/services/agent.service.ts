@@ -4,7 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Agent, AgentCreateDTO, AgentUpdateDTO } from '../modeles/agent.model';
+import { Agent, AgentCreate, AgentUpdate } from '../models/agent.model';
 import { StateService } from './state.service';
 
 @Injectable({
@@ -48,7 +48,7 @@ export class AgentService {
   /**
    * Crée un nouvel agent
    */
-  createAgent(agent: AgentCreateDTO): Observable<Agent> {
+  createAgent(agent: AgentCreate): Observable<Agent> {
     return this.http.post<Agent>(this.apiUrl, agent).pipe(
       tap(newAgent => {
         this.stateService.addAgent(newAgent);
@@ -63,7 +63,7 @@ export class AgentService {
   /**
    * Met à jour un agent existant
    */
-  updateAgent(id: string, agent: AgentUpdateDTO): Observable<Agent> {
+  updateAgent(id: string, agent: AgentUpdate): Observable<Agent> {
     return this.http.put<Agent>(`${this.apiUrl}/${id}`, agent).pipe(
       tap(updatedAgent => {
         this.stateService.updateAgent(updatedAgent);

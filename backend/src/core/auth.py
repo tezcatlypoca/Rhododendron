@@ -5,8 +5,8 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
-from src.database import get_db
-from src.database.models import User
+from ..database import get_db
+from ..database.models import User
 from .config import settings
 
 # Configuration

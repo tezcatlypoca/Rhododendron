@@ -1,14 +1,21 @@
 export interface Conversation {
   id: string;
   title: string;
-  createdAt: Date;
-  updatedAt: Date;
-  agent?: {
-    id: string;
-    name: string;
-    model_type: string;
-    role: string;
-    config: any;
-  };
-  metadata?: any;
+  created_at: Date;
+  updated_at: Date;
+  agent_id?: string;
+  conversation_metadata: any;
+  messages?: Message[];
+}
+
+export interface ConversationCreate {
+  title: string;
+  agent_id?: string;
+  conversation_metadata?: any;
+}
+
+export interface ConversationUpdate {
+  title?: string;
+  agent_id?: string;
+  conversation_metadata?: any;
 }

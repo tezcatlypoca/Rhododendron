@@ -32,6 +32,11 @@ export const routes: Routes = [
     canActivate: [authGuard]
   },
   {
+    path: 'projet',
+    loadComponent: () => import('./pages/projet/projet.component').then(m => m.ProjetComponent),
+    canActivate: [authGuard]
+  },
+  {
     path: 'edition-agent/:id',
     loadComponent: () => import('./pages/agent-edition/agent-edition.component').then(m => m.AgentEditionComponent),
     canActivate: [authGuard]

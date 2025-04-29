@@ -4,8 +4,9 @@ import { HttpClient, HttpParams } from '@angular/common/http'; // Ajout de HttpP
 import { Observable, throwError, of } from 'rxjs';
 import { catchError, switchMap, tap, take } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Conversation, Agent } from '../modeles/conversation.model';
-import { Message } from '../modeles/message.model';
+import { Conversation, ConversationCreate, ConversationUpdate } from '../models/conversation.model';
+import { Message, MessageCreate } from '../models/message.model';
+import { Agent } from '../models/agent.model';
 import { StateService } from './state.service';
 import { WebsocketService } from './websocket.service';
 
@@ -51,8 +52,8 @@ export class ConversationService {
     );
   }
 
-  createConversation(conversationData: any): Observable<Conversation> {
-    return this.http.post<Conversation>(this.apiUrl, conversationData).pipe(
+  createConversation(conversation: ConversationCreate): Observable<Conversation> {
+    return this.http.post<Conversation>(this.apiUrl, conversation).pipe(
       tap(conversation => {
         this.stateService.addConversation(conversation);
       }),
@@ -92,8 +93,8 @@ export class ConversationService {
     );
   }
 
-  updateConversation(id: string, conversationData: any): Observable<Conversation> {
-    return this.http.put<Conversation>(`${this.apiUrl}/${id}`, conversationData).pipe(
+  updateConversation(id: string, conversation: ConversationUpdate): Observable<Conversation> {
+    return this.http.patch<Conversation>(`${this.apiUrl}/${id}`, conversation).pipe(
       tap(updatedConversation => {
         this.stateService.updateConversation(updatedConversation);
       }),
@@ -101,8 +102,8 @@ export class ConversationService {
     );
   }
 
-  deleteConversation(id: string): Observable<any> {
-    return this.http.delete(`${this.apiUrl}/${id}`).pipe(
+  deleteConversation(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.apiUrl}/${id}`).pipe(
       tap(() => {
         this.stateService.deleteConversation(id);
       }),
@@ -110,29 +111,12 @@ export class ConversationService {
     );
   }
 
-  sendMessage(conversationId: string, messageData: { role: string; content: string; metadata: any }): Observable<Message> {
-    // S'assurer que la connexion WebSocket est établie
-    const isConnected = this.websocketService.connectionStatus$.pipe(take(1));
+  getMessages(conversationId: string): Observable<Message[]> {
+    return this.http.get<Message[]>(`${this.apiUrl}/${conversationId}/messages`);
+  }
 
-    return isConnected.pipe(
-      switchMap(connected => {
-        if (!connected) {
-          this.websocketService.connect();
-          this.websocketService.subscribeToConversation(conversationId);
-        }
-
-        return this.http.post<Message>(`${this.apiUrl}/${conversationId}/messages`, messageData).pipe(
-          tap(message => {
-            // On n'ajoute pas le message ici car il sera reçu via WebSocket
-            // Cela évite les doublons et garantit l'ordre correct
-          }),
-          catchError(error => {
-            console.error('Erreur lors de l\'envoi du message:', error);
-            return throwError(() => new Error('Erreur lors de l\'envoi du message'));
-          })
-        );
-      })
-    );
+  sendMessage(conversationId: string, message: MessageCreate): Observable<Message> {
+    return this.http.post<Message>(`${this.apiUrl}/${conversationId}/messages`, message);
   }
 
   loadMessages(conversationId: string, limit?: number): Observable<Message[]> {
